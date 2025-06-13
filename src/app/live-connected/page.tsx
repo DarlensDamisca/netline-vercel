@@ -7,49 +7,6 @@ import { FaUser, FaClock, FaCalendarAlt, FaDatabase, FaNetworkWired } from 'reac
 import { FiDownload, FiUpload } from 'react-icons/fi';
 import { useState, useEffect } from 'react';
 
-// Mock data - replace with real data later
-/* const usersData = [
-  {
-    name: "John Doe",
-    connectionNumber: "CN123456",
-    uptime: "2 hours 15 minutes",
-    activationDate: "2024-01-25",
-    expirationDate: "2024-02-25",
-    dataUsed: 256, // MB
-    dataLimit: 1000, // MB
-    ipAddress: "192.168.1.100",
-    macAddress: "00:1B:44:11:3A:B7",
-    downloadSpeed: 15.5, // Mbps
-    uploadSpeed: 5.2 // Mbps
-  },
-  {
-    name: "Jane Smith",
-    connectionNumber: "CN789012",
-    uptime: "45 minutes",
-    activationDate: "2024-01-20",
-    expirationDate: "2024-02-20",
-    dataUsed: 850, // MB
-    dataLimit: 1000, // MB
-    ipAddress: "192.168.1.101",
-    macAddress: "00:1B:44:11:3A:C8",
-    downloadSpeed: 22.8,
-    uploadSpeed: 8.4
-  },
-  {
-    name: "Mike Johnson",
-    connectionNumber: "CN345678",
-    uptime: "5 hours 30 minutes",
-    activationDate: "2024-01-15",
-    expirationDate: "2024-02-15",
-    dataUsed: 500, // MB
-    dataLimit: 1000, // MB
-    ipAddress: "192.168.1.102",
-    macAddress: "00:1B:44:11:3A:D9",
-    downloadSpeed: 18.2,
-    uploadSpeed: 6.7
-  }
-]; */
-
 interface Message {
   complete_name: string;
   connexion_number: string;
@@ -68,21 +25,20 @@ interface Message {
   };
 }
 
+// Fonction pour convertir vers le fuseau horaire d'Haïti avec format 12h
 const toHaitiTime = (stringDate: string): string => {
   try {
-    // Check if stringDate is valid
     if (!stringDate || stringDate === 'undefined' || stringDate === 'null') {
-      return 'N/A'; // Return a placeholder for invalid dates
+      return 'N/A';
     }
-    // Convert to Haiti timezone
+    
     const haitiTimeZone = "America/Port-au-Prince";
     const date = new Date(stringDate);
     
-    // Check if date is valid
     if (isNaN(date.getTime())) {
-      return 'N/A'; // Return a placeholder for invalid dates
+      return 'N/A';
     }
-    // Get individual parts adjusted to the Haiti timezone
+    
     const formatter = new Intl.DateTimeFormat("en-US", {
       timeZone: haitiTimeZone,
       year: "numeric",
@@ -91,51 +47,62 @@ const toHaitiTime = (stringDate: string): string => {
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
-      hourCycle: "h23", // Use 24-hour format
+      hourCycle: "h12", // Format 12h avec AM/PM
     });
-    // Format the date
-    const [
-      { value: month },
-      ,
-      { value: day },
-      ,
-      { value: year },
-      ,
-      { value: hour },
-      ,
-      { value: minute },
-      ,
-      { value: second },
-    ] = formatter.formatToParts(date);
-    // Construct the formatted string
-    const haitiDate = `${year}-${month}-${day}T${hour}:${minute}:${second}`;
-    //console.log(haitiDate); // Example: 2024-11-24T10:00:00
+    
+    const parts = formatter.formatToParts(date);
+    
+    const year = parts.find(part => part.type === 'year')?.value;
+    const month = parts.find(part => part.type === 'month')?.value;
+    const day = parts.find(part => part.type === 'day')?.value;
+    const hour = parts.find(part => part.type === 'hour')?.value;
+    const minute = parts.find(part => part.type === 'minute')?.value;
+    const second = parts.find(part => part.type === 'second')?.value;
+    const dayPeriod = parts.find(part => part.type === 'dayPeriod')?.value;
+    
+    const haitiDate = `${year}-${month}-${day}T${hour}:${minute}:${second} ${dayPeriod}`;
+    
     return haitiDate;
   } catch (error) {
     console.error('Error formatting date:', error);
-    return 'N/A'; // Return a placeholder for any errors
+    return 'N/A';
   }
+};
+
+// Fonction pour extraire seulement la date
+const toHaitiDate = (stringDate: string): string => {
+  const fullDateTime = toHaitiTime(stringDate);
+  if (fullDateTime === 'N/A') return 'N/A';
+  return fullDateTime.split('T')[0];
+};
+
+// Fonction pour extraire seulement l'heure
+const toHaitiTimeOnly = (stringDate: string): string => {
+  const fullDateTime = toHaitiTime(stringDate);
+  if (fullDateTime === 'N/A') return 'N/A';
+  return fullDateTime.split('T')[1];
 };
 
 const ConnectionCard = ({ userData }: { userData: any }) => {
   const dataUsagePercentage = (userData.dataUsed / userData.dataLimit) * 100;
 
-  let upload : string = "0", download : string = "0"
+  let upload: string = "0", download: string = "0";
 
-  if (userData.downloadSpeed > 1000000) {
-    download = `${(userData.downloadSpeed / 1000000).toFixed(2)} Mbps`
-  } else if (userData.downloadSpeed> 1000) {
-    download = `${(userData.downloadSpeed / 1000).toFixed(2)} Kbps`
+  // Correction: inversion des variables download et upload
+  if (userData.uploadSpeed > 1000000) {
+    upload = `${(userData.uploadSpeed / 1000000).toFixed(2)} Mbps`;
+  } else if (userData.uploadSpeed > 1000) {
+    upload = `${(userData.uploadSpeed / 1000).toFixed(2)} Kbps`;
   } else {
-    download = `${(userData.downloadSpeed).toFixed(2)} bps`
+    upload = `${(userData.uploadSpeed).toFixed(2)} bps`;
   }
 
-  if (userData.uploadSpeed > 1000000) {
-    upload = `${(userData.uploadSpeed / 1000000).toFixed(2)} Mbps`
-  } else if (userData.uploadSpeed > 1000) {
-    upload = `${(userData.uploadSpeed / 1000).toFixed(2)} Kbps`
+  if (userData.downloadSpeed > 1000000) {
+    download = `${(userData.downloadSpeed / 1000000).toFixed(2)} Mbps`;
+  } else if (userData.downloadSpeed > 1000) {
+    download = `${(userData.downloadSpeed / 1000).toFixed(2)} Kbps`;
   } else {
-    upload = `${(userData.uploadSpeed).toFixed(2)} bps`
+    download = `${(userData.downloadSpeed).toFixed(2)} bps`;
   }
 
   return (
@@ -152,7 +119,6 @@ const ConnectionCard = ({ userData }: { userData: any }) => {
           className="text-sm ml-auto"
         >
           Unlimited
-          {/* {dataUsagePercentage.toFixed(1)}% Used */}
         </Chip>
       </CardHeader>
       <Divider />
@@ -167,13 +133,13 @@ const ConnectionCard = ({ userData }: { userData: any }) => {
             </div>
           </div>
 
-          {/* Connection Dates */}
+          {/* Connection Dates - MISE À JOUR */}
           <div className="flex items-center gap-3">
             <FaCalendarAlt className="text-lg text-primary" />
             <div>
               <p className="text-small font-medium text-foreground-500">Plan Period</p>
               <p className="text-medium font-semibold text-foreground">
-                {new Date(userData.activationDate).toLocaleDateString()} - {new Date(userData.expirationDate)}  ({userData.activationDate.split('T')[1]})
+                {toHaitiDate(userData.activationDate)} - {toHaitiDate(userData.expirationDate)} ({toHaitiTimeOnly(userData.activationDate)})
               </p>
             </div>
           </div>
@@ -184,7 +150,7 @@ const ConnectionCard = ({ userData }: { userData: any }) => {
             <div>
               <p className="text-small font-medium text-foreground-500">Data Usage</p>
               <p className="text-medium font-semibold text-foreground">
-                {userData.dataUsed} MB / {userData.dataLimit} MB
+                {userData.dataUsed} MB / {userData.dataLimit}
               </p>
             </div>
           </div>
@@ -203,8 +169,8 @@ const ConnectionCard = ({ userData }: { userData: any }) => {
             </div>
           </div>
 
-          {/* Network Speeds */}
-          <div className="flex  items-center w-full">
+          {/* Network Speeds - CORRECTION */}
+          <div className="flex items-center w-full">
             <div className="grid grid-cols-[1fr,auto,1fr] w-full items-center">
               {/* Download Speed */}
               <div className="flex justify-center lg:justify-end">
@@ -212,7 +178,7 @@ const ConnectionCard = ({ userData }: { userData: any }) => {
                   <FiDownload className="text-2xl text-primary" />
                   <p className="text-small font-medium text-foreground-500">Download</p>
                   <p className="text-medium font-semibold text-foreground">
-                    {upload} 
+                    {download}
                   </p>
                 </div>
               </div>
@@ -221,29 +187,18 @@ const ConnectionCard = ({ userData }: { userData: any }) => {
               <div className="h-12 w-px bg-divider mx-6"></div>
 
               {/* Upload Speed */}
-              <div className="flex justify-center lg:justify-start ">
+              <div className="flex justify-center lg:justify-start">
                 <div className="flex flex-col items-center">
                   <FiUpload className="text-2xl text-primary" />
                   <p className="text-small font-medium text-foreground-500">Upload</p>
                   <p className="text-medium font-semibold text-foreground">
-                    {download}
+                    {upload}
                   </p>
                 </div>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Data Usage Progress */}
-        {/* <div className="w-full h-2 bg-default-100 rounded-full overflow-hidden">
-          <div
-            className={`h-full ${dataUsagePercentage > 80 ? 'bg-danger' :
-                dataUsagePercentage > 50 ? 'bg-warning' :
-                  'bg-success'
-              }`}
-            style={{ width: `${dataUsagePercentage}%` }}
-          />
-        </div> */}
       </CardBody>
     </Card>
   );
@@ -254,42 +209,34 @@ export default function LiveConnected() {
   const [usersData, setUsersData] = useState<any[]>([]);
 
   useEffect(() => {
-    const buldObject: any[] = []
-    if(messages.length === 0){
-      return
+    const buildObject: any[] = [];
+    if (messages.length === 0) {
+      return;
     }
     for (const object of messages) {
-      buldObject.push({
+      buildObject.push({
         name: object.complete_name,
         connectionNumber: object.connexion_number,
         uptime: object.uptime,
-        activationDate: toHaitiTime(object.schedule_data?.activation_date),
-        expirationDate: toHaitiTime(object.schedule_data?.expiration_date),
+        activationDate: object.schedule_data?.activation_date,
+        expirationDate: object.schedule_data?.expiration_date,
         dataUsed: object.schedule_data?.used_data !== undefined ? object.schedule_data.used_data.toFixed(2) : '0.00',
-        dataLimit: "Unlimited", // MB
+        dataLimit: "Unlimited",
         ipAddress: object.ip,
         macAddress: object.mac_address,
         downloadSpeed: object.bandwitch?.rx || 0,
         uploadSpeed: object.bandwitch?.tx || 0
-      })
+      });
     }
 
-    setUsersData(buldObject)
-
-
-  }, [messages])
+    setUsersData(buildObject);
+  }, [messages]);
 
   useEffect(() => {
-    // Create a local channel entity
     const channel = pubnub.channel('NetlineMessageListenner');
-    // Create a subscription on the channel
     const subscription = channel.subscription();
 
-    // add an onMessage listener to the channel subscription
     subscription.onMessage = async (messageEvent: any) => {
-      //const message = messageEvent.message
-      //console.log(message.description)
-      //setMessages(messageEvent.message.description);
       const variablesResponse = await fetch('/api/items?table=variables');
       const variablesData = await variablesResponse.json();
       const connectedUsersVariable = variablesData.find((variable: any) => variable.name === 'connected_users');
@@ -298,47 +245,41 @@ export default function LiveConnected() {
       }
     };
 
-    // subscribe to the channel
     subscription.subscribe();
 
-    // Cleanup function to remove subscription and listener
     return () => {
       subscription.unsubscribe();
       pubnub.removeListener({ message: subscription.onMessage });
-    }
+    };
   }, []);
 
   const publishMessage = async (message: string) => {
     const publishPayload = {
       channel: "NetlineMessageReceiver",
       message: {
-        //title: "greeting",
         request: message,
         description: message
       }
     };
     await pubnub.publish(publishPayload);
-
   };
 
   useEffect(() => {
-    publishMessage("get")
+    publishMessage("get");
     const myInterval = setInterval(() => {
       try {
-        publishMessage("get")
+        publishMessage("get");
       } catch (error) {
-        setMessages([])
+        setMessages([]);
       }
-    }, 8000)
+    }, 8000);
 
     return () => {
-      setMessages([])
-      console.log("Close Interval")
-      clearInterval(myInterval)
-    }
-  }, [])
-
-
+      setMessages([]);
+      console.log("Close Interval");
+      clearInterval(myInterval);
+    };
+  }, []);
 
   return (
     <AppLayout>
