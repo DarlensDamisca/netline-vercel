@@ -77,7 +77,14 @@ const toHaitiTime = (stringDate: string): string => {
     
     // Convert to Haiti timezone
     const haitiTimeZone = "America/Port-au-Prince";
-    const date = new Date(stringDate);
+    
+    // Handle different input formats
+    let date: Date;
+    
+    // Format 1: "Fri Jun 13 2025 17:34:05 GMT+0000 (Coordinated Universal Time)"
+    // Format 2: "2025-06-14T05:34:05.016-00:00"
+    // Both formats are handled by the Date constructor
+    date = new Date(stringDate);
     
     // Check if date is valid
     if (isNaN(date.getTime())) {
