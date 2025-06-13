@@ -173,7 +173,7 @@ const ConnectionCard = ({ userData }: { userData: any }) => {
             <div>
               <p className="text-small font-medium text-foreground-500">Plan Period</p>
               <p className="text-medium font-semibold text-foreground">
-                {new Date(userData.activationDate).toLocaleDateString()} - {new Date(userData.expirationDate).toLocaleDateString()}  ({userData.activationDate.split('T')[1]})
+                {new Date(userData.activationDate).toLocaleDateString()} - {new Date(userData.expirationDate)}  ({userData.activationDate.split('T')[1]})
               </p>
             </div>
           </div>
