@@ -74,24 +74,15 @@ const toHaitiTime = (stringDate: string): string => {
     if (!stringDate || stringDate === 'undefined' || stringDate === 'null') {
       return 'N/A'; // Return a placeholder for invalid dates
     }
-    
     // Convert to Haiti timezone
     const haitiTimeZone = "America/Port-au-Prince";
-    
-    // Handle different input formats
-    let date: Date;
-    
-    // Format 1: "Fri Jun 13 2025 17:34:05 GMT+0000 (Coordinated Universal Time)"
-    // Format 2: "2025-06-14T05:34:05.016-00:00"
-    // Both formats are handled by the Date constructor
-    date = new Date(stringDate);
+    const date = new Date(stringDate);
     
     // Check if date is valid
     if (isNaN(date.getTime())) {
       return 'N/A'; // Return a placeholder for invalid dates
     }
-    
-    // Get individual parts adjusted to the Haiti timezone with 12-hour format
+    // Get individual parts adjusted to the Haiti timezone
     const formatter = new Intl.DateTimeFormat("en-US", {
       timeZone: haitiTimeZone,
       year: "numeric",
@@ -100,24 +91,25 @@ const toHaitiTime = (stringDate: string): string => {
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
-      hourCycle: "h12", // Use 12-hour format
+      hourCycle: "h23", // Use 24-hour format
     });
-    
     // Format the date
-    const parts = formatter.formatToParts(date);
-    
-    // Extract parts using find method for better reliability
-    const year = parts.find(part => part.type === 'year')?.value;
-    const month = parts.find(part => part.type === 'month')?.value;
-    const day = parts.find(part => part.type === 'day')?.value;
-    const hour = parts.find(part => part.type === 'hour')?.value;
-    const minute = parts.find(part => part.type === 'minute')?.value;
-    const second = parts.find(part => part.type === 'second')?.value;
-    const dayPeriod = parts.find(part => part.type === 'dayPeriod')?.value;
-    
+    const [
+      { value: month },
+      ,
+      { value: day },
+      ,
+      { value: year },
+      ,
+      { value: hour },
+      ,
+      { value: minute },
+      ,
+      { value: second },
+    ] = formatter.formatToParts(date);
     // Construct the formatted string
-    const haitiDate = `${year}-${month}-${day}T${hour}:${minute}:${second} ${dayPeriod}`;
-    
+    const haitiDate = `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+    //console.log(haitiDate); // Example: 2024-11-24T10:00:00
     return haitiDate;
   } catch (error) {
     console.error('Error formatting date:', error);
