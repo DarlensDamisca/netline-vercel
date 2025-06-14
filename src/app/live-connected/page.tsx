@@ -47,7 +47,7 @@ const toHaitiTime = (stringDate: string): string => {
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
-      hourCycle: "h12", // Format 12h avec AM/PM
+      hourCycle: "h11", // Format 12h avec AM/PM
     });
     
     const parts = formatter.formatToParts(date);
