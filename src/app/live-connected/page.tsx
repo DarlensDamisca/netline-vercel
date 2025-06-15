@@ -9,7 +9,7 @@ import { useState, useEffect } from 'react';
 
 interface Message {
   complete_name: string;
-  connexion_number: string;
+  connexion_number: string; 
   uptime: string;
   schedule_data: {
     activation_date: string;
