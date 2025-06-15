@@ -205,6 +205,33 @@ export default function SellHistory() {
       });
     }
     
+    // Sort by date - most recent first (descending order)
+    filtered.sort((a, b) => {
+      try {
+        let dateA, dateB;
+        
+        // Handle MongoDB date format for item a
+        if (a.date && typeof a.date === 'object' && '$date' in a.date) {
+          dateA = new Date(a.date.$date as string);
+        } else {
+          dateA = new Date(a.date as string | number);
+        }
+        
+        // Handle MongoDB date format for item b
+        if (b.date && typeof b.date === 'object' && '$date' in b.date) {
+          dateB = new Date(b.date.$date as string);
+        } else {
+          dateB = new Date(b.date as string | number);
+        }
+        
+        // Sort in descending order (most recent first)
+        return dateB.getTime() - dateA.getTime();
+      } catch (error) {
+        console.error('Error sorting by date:', error);
+        return 0;
+      }
+    });
+    
     return filtered;
   };
 
