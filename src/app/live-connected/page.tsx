@@ -125,7 +125,7 @@ const ConnectionCard = ({ userData }: { userData: any }) => {
                 {toHaitiDate(userData.activationDate)} - {toHaitiDate(userData.expirationDate)}
               </p>
               <p className="text-small text-foreground-500">
-                Activation: {toHaitiTimeOnly(userData.activationDate)}
+                Desactivation: {toHaitiTimeOnly(userData.activationDate)}
               </p>
             </div>
           </div>
