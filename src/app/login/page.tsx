@@ -1,5 +1,4 @@
 'use client';
-
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardBody, Input, Button } from "@nextui-org/react";
@@ -39,7 +38,7 @@ export default function Login() {
         
         // Store user info in localStorage
         localStorage.setItem('currentUser', JSON.stringify({
-          _id: user._id,
+          id: user.id,
           name: user.name,
           complete_name: user.complete_name,
           firstname: user.firstname,
@@ -78,7 +77,7 @@ export default function Login() {
           <CardBody className="p-6">
             <form onSubmit={handleLogin} className="flex flex-col gap-4">
               {error && (
-                <div className="bg-danger-50 text-danger p-3 rounded-lg text-center text-sm">
+                <div className="bg-blue-900/20 text-blue-800 dark:text-blue-200 p-3 rounded-lg text-center text-sm border border-blue-900/30">
                   {error}
                 </div>
               )}
