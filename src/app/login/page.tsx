@@ -71,7 +71,7 @@ export default function Login() {
         transition={{ duration: 0.6 }}
       >
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-primary">NETLINE CONTROL</h1>
+          <h1 className="text-2xl font-bold text-secondary">NETLINE CONTROL</h1>
         </div>
         
         <Card className="shadow-md">
