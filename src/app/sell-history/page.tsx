@@ -704,7 +704,6 @@ export default function SellHistory() {
                     >
                       <TableHeader>
                         <TableColumn>PROFILE</TableColumn>
-                        <TableColumn>NUMBER</TableColumn>
                         <TableColumn>DURATION</TableColumn>
                         <TableColumn>PRICE</TableColumn>
                         <TableColumn>DATE</TableColumn>
@@ -716,9 +715,7 @@ export default function SellHistory() {
                             <TableCell>
                               <div className="font-medium">{sold.profile}</div>
                             </TableCell>
-                            <TableCell>
-                              <div className="font-medium">{sold.number}</div>
-                            </TableCell>
+                           
                             <TableCell>
                               <div className="flex items-center gap-1">
                                 <FaClock className="text-xs text-default-400" />
