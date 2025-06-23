@@ -43,6 +43,7 @@ interface Sold {
   status: string;
   profile: string;
   name: string;
+  numero:number;
   duration_hour: string;
   price: number;
   by: string;
@@ -703,6 +704,7 @@ export default function SellHistory() {
                     >
                       <TableHeader>
                         <TableColumn>PROFILE</TableColumn>
+                        <TableColumn>NUMBER</TableColumn>
                         <TableColumn>DURATION</TableColumn>
                         <TableColumn>PRICE</TableColumn>
                         <TableColumn>DATE</TableColumn>
@@ -713,6 +715,9 @@ export default function SellHistory() {
                           <TableRow key={sold._id.$oid} className="hover:bg-default-50 transition-colors">
                             <TableCell>
                               <div className="font-medium">{sold.profile}</div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium">{sold.numero}</div>
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-1">
