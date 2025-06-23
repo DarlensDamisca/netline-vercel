@@ -43,7 +43,7 @@ interface Sold {
   status: string;
   profile: string;
   name: string;
-  numero:number;
+  number:string;
   duration_hour: string;
   price: number;
   by: string;
@@ -717,7 +717,7 @@ export default function SellHistory() {
                               <div className="font-medium">{sold.profile}</div>
                             </TableCell>
                             <TableCell>
-                              <div className="font-medium">{sold.numero}</div>
+                              <div className="font-medium">{sold.number}</div>
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-1">
