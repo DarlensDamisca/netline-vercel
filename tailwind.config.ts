@@ -17,9 +17,9 @@ const config: Config = {
       light: {
         colors: {
           primary: {
-            DEFAULT: "#dc2626",
-            100: "#fee2e2",
-            900: "#991b1b",
+            DEFAULT: "#3b82f6", // Bleu moderne
+            100: "#dbeafe",     // Bleu très clair
+            900: "#1e3a8a",     // Bleu très sombre
           },
           content1: "#FFFFFF",
           content2: "#f3f4f6",
@@ -28,9 +28,9 @@ const config: Config = {
       dark: {
         colors: {
           primary: {
-            DEFAULT: "#dc2626",
-            100: "#450a0a",
-            900: "#fee2e2",
+            DEFAULT: "#3b82f6", // Même bleu moderne
+            100: "#1e3a8a",     // Bleu très sombre (inversé)
+            900: "#dbeafe",     // Bleu très clair (inversé)
           },
           content1: "#18181b",
           content2: "#27272a",
