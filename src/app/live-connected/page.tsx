@@ -25,6 +25,43 @@ interface Message {
   };
 }
 
+const calculerIntervalle = (activationDate: string, expirationDate: string): string => {
+  try {
+    if (!activationDate || !expirationDate || 
+        activationDate === 'undefined' || expirationDate === 'undefined') {
+      return 'N/A';
+    }
+    
+    const dateActivation = new Date(activationDate);
+    const dateExpiration = new Date(expirationDate);
+    
+    if (isNaN(dateActivation.getTime()) || isNaN(dateExpiration.getTime())) {
+      return 'N/A';
+    }
+    
+    const differenceMs = dateExpiration.getTime() - dateActivation.getTime();
+    const heures = Math.floor(Math.abs(differenceMs) / (1000 * 60 * 60));
+    const minutes = Math.floor((Math.abs(differenceMs) % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (heures === 0) {
+      return `${minutes}min`;
+    } else if (heures < 24) {
+      return minutes > 0 ? `${heures}h ${minutes}min` : `${heures}h`;
+    } else {
+      const jours = Math.floor(heures / 24);
+      const resteHeures = heures % 24;
+      if (resteHeures === 0) {
+        return `${jours}j`;
+      } else {
+        return `${jours}j ${resteHeures}h`;
+      }
+    }
+  } catch (error) {
+    console.error('Error calculating interval:', error);
+    return 'N/A';
+  }
+};
+
 // Fonctions optimisées pour le format JJ-MM-AAAA
 const toHaitiDate = (stringDate: string): string => {
   try {
@@ -117,18 +154,38 @@ const ConnectionCard = ({ userData }: { userData: any }) => {
           </div>
 
           {/* Connection Dates - Format JJ-MM-AAAA optimisé */}
-          <div className="flex items-center gap-3">
-            <FaCalendarAlt className="text-lg text-primary" />
-            <div>
-              <p className="text-small font-medium text-foreground-500">Plan Period</p>
-              <p className="text-medium font-semibold text-foreground">
-                {toHaitiDate(userData.activationDate)} - {toHaitiDate(userData.expirationDate)}
-              </p>
-              <p className="text-small text-foreground-500">
-                Desactivation: {toHaitiTimeOnly(userData.expirationDate)}
-              </p>
-            </div>
-          </div>
+         <div className="flex items-center gap-3">
+  <FaCalendarAlt className="text-lg text-primary" />
+  <div className="w-full">
+    <p className="text-small font-medium text-foreground-500 mb-1">Plan Period</p>
+    <p className="text-medium font-semibold text-foreground mb-2">
+      {toHaitiDate(userData.activationDate)} - {toHaitiDate(userData.expirationDate)}
+    </p>
+    
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-small">
+      <div>
+        <span className="text-foreground-500">Activation: </span>
+        <span className="text-foreground font-medium">
+          {toHaitiTimeOnly(userData.activationDate)}
+        </span>
+      </div>
+      
+      <div>
+        <span className="text-foreground-500">Désactivation: </span>
+        <span className="text-foreground font-medium">
+          {toHaitiTimeOnly(userData.expirationDate)}
+        </span>
+      </div>
+      
+      <div>
+        <span className="text-foreground-500">Durée: </span>
+        <span className="text-primary font-medium">
+          {calculerIntervalle(userData.activationDate, userData.expirationDate)}
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
 
           {/* Data Usage */}
           <div className="flex items-center gap-3">
