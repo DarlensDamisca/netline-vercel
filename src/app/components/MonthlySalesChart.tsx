@@ -79,8 +79,8 @@ export const MonthlySalesChart: React.FC<{histories: any}> = ({histories}) => {
       {
         label: 'Monthly Revenue',
         data: revenueData,
-        backgroundColor: 'rgba(220, 38, 38, 0.7)',
-        borderColor: 'rgb(220, 38, 38)',
+        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+        borderColor: 'rgb(59, 130, 246)',
         borderWidth: 1,
         borderRadius: 4,
       },
