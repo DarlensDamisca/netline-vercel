@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import AppLayout from '../components/AppLayout';
 import { LoadingAnimation } from '../components/LoadingAnimation';
@@ -26,7 +26,7 @@ import {
   Tabs,
   Tab
 } from "@nextui-org/react";
-import { FaCalendarAlt, FaFilter, FaSearch, FaUser, FaClock } from 'react-icons/fa';
+import { FaCalendarAlt, FaFilter, FaSearch, FaUser, FaClock, FaCalculator, FaShare } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 
 interface User {
@@ -70,6 +70,18 @@ export default function SellHistory() {
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState<number | null>(currentDate.getMonth());
   const [selectedYear, setSelectedYear] = useState<number | null>(currentDate.getFullYear());
+  
+  const [showCommissionCard, setShowCommissionCard] = useState(false);
+  const [commissionData, setCommissionData] = useState<{
+    vendorName: string;
+    month: string;
+    year: number;
+    totalSales: number;
+    vendorPercentage: number;
+    vendorCommission: number;
+    systemPercentage: number;
+    systemAmount: number;
+  } | null>(null);
   
   const rowsPerPage = 10;
   const months = [
@@ -303,6 +315,99 @@ export default function SellHistory() {
     return filteredSolds.reduce((total, sold) => total + sold.price, 0);
   };
 
+  // Calculate commission for vendor
+  const calculateCommission = () => {
+    const totalSales = calculateTotalSales();
+    const vendorPercentage = 10; // 10% pour le vendeur
+    const vendorCommission = (totalSales * vendorPercentage) / 100;
+    const systemPercentage = 90; // 90% pour le système
+    const systemAmount = (totalSales * systemPercentage) / 100;
+    
+    setCommissionData({
+      vendorName: selectedUser?.complete_name || 'Unknown',
+      month: selectedMonth !== null ? months[selectedMonth] : 'All months',
+      year: selectedYear || currentYear,
+      totalSales,
+      vendorPercentage,
+      vendorCommission,
+      systemPercentage,
+      systemAmount
+    });
+    setShowCommissionCard(true);
+  };
+
+  // Share commission card as image
+  const shareCommissionCard = async () => {
+    const element = document.getElementById('commission-card');
+    if (!element) return;
+    
+    try {
+      // Create a temporary canvas to draw the card
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      // Set canvas size
+      canvas.width = 400;
+      canvas.height = 600;
+      
+      // Draw background
+      ctx.fillStyle = '#f3f4f6';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw content manually (since html2canvas is not available)
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(20, 20, canvas.width - 40, canvas.height - 40);
+      
+      // Add text content
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 24px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('Commission Report', canvas.width / 2, 60);
+      
+      ctx.font = '16px Arial';
+      ctx.fillText(`${commissionData?.month} ${commissionData?.year}`, canvas.width / 2, 90);
+      
+      ctx.font = '18px Arial';
+      ctx.fillText(`Vendor: ${commissionData?.vendorName}`, canvas.width / 2, 130);
+      
+      ctx.font = 'bold 20px Arial';
+      ctx.fillText(`Total Sales: $${commissionData?.totalSales.toLocaleString()}`, canvas.width / 2, 180);
+      
+      ctx.fillStyle = '#10b981';
+      ctx.font = '18px Arial';
+      ctx.fillText(`Vendor (${commissionData?.vendorPercentage}%): $${commissionData?.vendorCommission.toLocaleString()}`, canvas.width / 2, 230);
+      
+      ctx.fillStyle = '#3b82f6';
+      ctx.fillText(`System (${commissionData?.systemPercentage}%): $${commissionData?.systemAmount.toLocaleString()}`, canvas.width / 2, 270);
+      
+      // Convert to blob
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        
+        const file = new File([blob], 'commission-report.png', { type: 'image/png' });
+        
+        if (navigator.share && navigator.canShare({ files: [file] })) {
+          navigator.share({
+            files: [file],
+            title: 'Commission Report',
+            text: `Commission report for ${commissionData?.vendorName} - ${commissionData?.month} ${commissionData?.year}`
+          }).catch(console.error);
+        } else {
+          // Fallback: download the image
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'commission-report.png';
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+      });
+    } catch (error) {
+      console.error('Error generating image:', error);
+    }
+  };
+
   if (isLoading) {
     return <LoadingAnimation />;
   }
@@ -367,10 +472,23 @@ export default function SellHistory() {
             <div className="mb-4">
               <Card className="shadow-md">
                 <CardHeader className="flex flex-col gap-1 p-3">
-                  <h3 className="text-lg font-semibold">{selectedUser.name || 'Select a user'}</h3>
-                  <p className="text-xs text-default-500">
-                    Total Sales: <span className="font-semibold text-success">${calculateTotalSales().toLocaleString()}</span>
-                  </p>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="text-lg font-semibold">{selectedUser.name || 'Select a user'}</h3>
+                      <p className="text-xs text-default-500">
+                        Total Sales: <span className="font-semibold text-success">${calculateTotalSales().toLocaleString()}</span>
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      color="primary"
+                      variant="flat"
+                      startContent={<FaCalculator />}
+                      onClick={calculateCommission}
+                    >
+                      Commission
+                    </Button>
+                  </div>
                 </CardHeader>
                 <Divider />
                 <CardBody className="p-3">
@@ -610,6 +728,16 @@ export default function SellHistory() {
               
               {selectedUser && (
                 <div className="flex flex-wrap gap-2 mt-2 sm:mt-0 w-full sm:w-auto">
+                  <Button
+                    color="primary"
+                    variant="solid"
+                    startContent={<FaCalculator />}
+                    onClick={calculateCommission}
+                    size="sm"
+                  >
+                    Calculate Commission
+                  </Button>
+                  
                   <Dropdown>
                     <DropdownTrigger>
                       <Button 
@@ -779,6 +907,105 @@ export default function SellHistory() {
             </CardBody>
           </Card>
         </div>
+        
+        {/* Commission Card Modal */}
+        <AnimatePresence>
+          {showCommissionCard && commissionData && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                  setShowCommissionCard(false);
+                }
+              }}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white rounded-xl shadow-2xl max-w-md w-full"
+              >
+                <div id="commission-card" className="p-6 bg-gradient-to-br from-primary/10 to-success/10 rounded-xl">
+                  <div className="text-center mb-6">
+                    <h3 className="text-2xl font-bold text-gray-800 mb-2">Commission Report</h3>
+                    <div className="inline-flex items-center gap-2 bg-white/50 px-3 py-1 rounded-full">
+                      <FaCalendarAlt className="text-primary" />
+                      <span className="text-sm font-medium">{commissionData.month} {commissionData.year}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="bg-primary/10 p-2 rounded-full">
+                        <FaUser className="text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Vendor</p>
+                        <p className="font-semibold text-gray-800">{commissionData.vendorName}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="bg-white rounded-lg p-4 shadow-sm">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-gray-600">Total Sales</span>
+                        <span className="text-xl font-bold text-gray-800">${commissionData.totalSales.toLocaleString()}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-gradient-to-r from-primary to-success h-2 rounded-full" style={{ width: '100%' }}></div>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-success/10 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-3 h-3 bg-success rounded-full"></div>
+                          <span className="text-sm font-medium text-gray-600">Vendor ({commissionData.vendorPercentage}%)</span>
+                        </div>
+                        <p className="text-lg font-bold text-success">${commissionData.vendorCommission.toLocaleString()}</p>
+                      </div>
+                      
+                      <div className="bg-primary/10 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-3 h-3 bg-primary rounded-full"></div>
+                          <span className="text-sm font-medium text-gray-600">System ({commissionData.systemPercentage}%)</span>
+                        </div>
+                        <p className="text-lg font-bold text-primary">${commissionData.systemAmount.toLocaleString()}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <p className="text-xs text-center text-gray-500">Generated on {new Date().toLocaleDateString()}</p>
+                  </div>
+                </div>
+                
+                <div className="p-4 bg-white rounded-b-xl flex gap-2">
+                  <Button
+                    color="primary"
+                    variant="solid"
+                    startContent={<FaShare />}
+                    onClick={shareCommissionCard}
+                    className="flex-1"
+                  >
+                    Share on WhatsApp
+                  </Button>
+                  <Button
+                    color="default"
+                    variant="flat"
+                    onClick={() => setShowCommissionCard(false)}
+                  >
+                    Close
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </AppLayout>
   );
