@@ -728,6 +728,7 @@ export default function SellHistory() {
               
               {selectedUser && (
                 <div className="flex flex-wrap gap-2 mt-2 sm:mt-0 w-full sm:w-auto">
+                  { selectedUser.type==="VENDOR" && (
                   <Button
                     color="primary"
                     variant="solid"
@@ -737,7 +738,7 @@ export default function SellHistory() {
                   >
                     Calculate Commission
                   </Button>
-                  
+                  )}
                   <Dropdown>
                     <DropdownTrigger>
                       <Button 
