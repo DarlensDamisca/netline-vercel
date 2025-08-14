@@ -97,7 +97,7 @@ export default function SellHistory() {
     const fetchData = async () => {
       try {
         // Fetch users
-        const usersResponse = await fetch('/api/items?table=users&params=' + encodeURIComponent(JSON.stringify({ type: { $in: ['VENDOR', 'SYSTEM_ADMIN'] } })));
+        const usersResponse = await fetch('/api/items?table=users&params=' + encodeURIComponent(JSON.stringify({ type: { $in: ['VENDOR', 'SYSTEM_ADMINISTRATOR'] } })));
         const usersData = await usersResponse.json();
 
         console.log(usersData); // Log the first user to see the structure
