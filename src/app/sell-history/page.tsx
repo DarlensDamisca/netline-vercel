@@ -479,6 +479,7 @@ export default function SellHistory() {
                         Total Sales: <span className="font-semibold text-success">${calculateTotalSales().toLocaleString()}</span>
                       </p>
                     </div>
+                    { selectedUser.type==="VENDOR" && (
                     <Button
                       size="sm"
                       color="primary"
@@ -488,6 +489,7 @@ export default function SellHistory() {
                     >
                       Commission
                     </Button>
+              )}
                   </div>
                 </CardHeader>
                 <Divider />
