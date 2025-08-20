@@ -5,6 +5,7 @@ import { Card, CardBody, Modal, ModalContent, ModalHeader, ModalBody, ModalFoote
 import { FaSearch, FaCalendarAlt, FaUsers, FaDollarSign, FaCrown, FaRegClock } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { MonthlySalesChart } from './MonthlySalesChart';
+import { DailySalesChart } from './dailysaleschart';
 import { connect } from 'http2';
 
 interface PlanSale {
@@ -388,6 +389,17 @@ export const PlanSalesAnalytics: React.FC<{ users: any, histories: any }> = ({ u
               Monthly sales chart
             </motion.h2>
             <MonthlySalesChart histories={histories} />
+          </div>
+
+          <div className="mt-8">
+            <motion.h2
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-xl font-semibold mb-6 text-foreground mt-32"
+            >
+              Daily sales chart
+            </motion.h2>
+            <DailySalesChart histories={histories} />
           </div>
 
 
