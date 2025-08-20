@@ -205,8 +205,9 @@ export const DailySalesChart: React.FC<{histories: any}> = ({histories}) => {
   const monthTotal = revenueData.reduce((sum, value) => sum + value, 0);
   const averageDaily = revenueData.length > 0 ? monthTotal / revenueData.length : 0;
   const maxDaily = Math.max(...revenueData, 0);
-  const daysWithSales = revenueData.filter(value => value > 0).length;
-  const minDaily = daysWithSales.length > 0 ? Math.min(...revenueData) : 0;
+ const daysWithSalesArray = revenueData.filter(value => value > 0);
+  const daysWithSales = daysWithSalesArray.length;
+  const minDaily = daysWithSalesArray.length > 0 ? Math.min(...daysWithSalesArray) : 0;
 
   return (
     <Card className="w-full">
