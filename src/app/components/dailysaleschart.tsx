@@ -261,7 +261,7 @@ export const DailySalesChart: React.FC<{histories: any}> = ({histories}) => {
             </div>
             <div className="bg-default-100 rounded-lg p-3">
               <p className="text-sm text-default-500">Best Day / Wost Day</p>
-              <p className="text-lg font-bold text-warning">{formatCurrency(maxDaily)} / {minDaily === 0 ? 'No sales' : formatCurrency(minDaily)}</p>
+              <p className="text-lg font-bold text-warning">{formatCurrency(maxDaily)} / {formatCurrency(minDaily)}</p>
             </div>
             <div className="bg-default-100 rounded-lg p-3">
               <p className="text-sm text-default-500">Active Days</p>
