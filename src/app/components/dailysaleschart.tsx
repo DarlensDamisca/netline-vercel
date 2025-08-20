@@ -205,6 +205,7 @@ export const DailySalesChart: React.FC<{histories: any}> = ({histories}) => {
   const monthTotal = revenueData.reduce((sum, value) => sum + value, 0);
   const averageDaily = revenueData.length > 0 ? monthTotal / revenueData.length : 0;
   const maxDaily = Math.max(...revenueData, 0);
+ const minDaily = Math.min(...revenueData, 0); 
   const daysWithSales = revenueData.filter(value => value > 0).length;
 
   return (
@@ -259,8 +260,8 @@ export const DailySalesChart: React.FC<{histories: any}> = ({histories}) => {
               <p className="text-lg font-bold text-primary">{formatCurrency(averageDaily)}</p>
             </div>
             <div className="bg-default-100 rounded-lg p-3">
-              <p className="text-sm text-default-500">Best Day</p>
-              <p className="text-lg font-bold text-warning">{formatCurrency(maxDaily)}</p>
+              <p className="text-sm text-default-500">Best Day / Wost Day</p>
+              <p className="text-lg font-bold text-warning">{formatCurrency(maxDaily)} / {formatCurrency(minDaily)}</p>
             </div>
             <div className="bg-default-100 rounded-lg p-3">
               <p className="text-sm text-default-500">Active Days</p>
