@@ -126,14 +126,48 @@ export const DailySalesChart: React.FC<{histories: any}> = ({histories}) => {
   const daysInSelectedMonth = getDaysInMonth(parseInt(selectedYear), parseInt(selectedMonth));
   const dayLabels = Array.from({ length: daysInSelectedMonth }, (_, i) => (i + 1).toString());
 
+  // Calculate min and max values for coloring
+  const daysWithSalesArray = revenueData.filter(value => value > 0);
+  const maxDaily = Math.max(...revenueData, 0);
+  const minDaily = daysWithSalesArray.length > 0 ? Math.min(...daysWithSalesArray) : 0;
+
+  // Generate colors for each bar based on value
+  const getBarColors = () => {
+    return revenueData.map(value => {
+      if (value === 0) {
+        return 'rgba(59, 130, 246, 0.7)'; // Blue for zero/no sales
+      } else if (value === maxDaily) {
+        return 'rgba(34, 197, 94, 0.7)'; // Green for maximum
+      } else if (value === minDaily) {
+        return 'rgba(239, 68, 68, 0.7)'; // Red for minimum
+      } else {
+        return 'rgba(59, 130, 246, 0.7)'; // Blue for others
+      }
+    });
+  };
+
+  const getBorderColors = () => {
+    return revenueData.map(value => {
+      if (value === 0) {
+        return 'rgb(59, 130, 246)'; // Blue border
+      } else if (value === maxDaily) {
+        return 'rgb(34, 197, 94)'; // Green border
+      } else if (value === minDaily) {
+        return 'rgb(239, 68, 68)'; // Red border
+      } else {
+        return 'rgb(59, 130, 246)'; // Blue border
+      }
+    });
+  };
+
   const chartData = {
     labels: dayLabels,
     datasets: [
       {
         label: 'Daily Revenue',
         data: revenueData,
-        backgroundColor: 'rgba(34, 197, 94, 0.7)',
-        borderColor: 'rgb(34, 197, 94)',
+        backgroundColor: getBarColors(),
+        borderColor: getBorderColors(),
         borderWidth: 1,
         borderRadius: 4,
       },
@@ -164,7 +198,16 @@ export const DailySalesChart: React.FC<{histories: any}> = ({histories}) => {
             return `${getMonthName(parseInt(selectedMonth))} ${day}, ${selectedYear}`;
           },
           label: (context: { parsed: { y: number; }; }) => {
-            return `Revenue: ${formatCurrency(context.parsed.y)}`;
+            const value = context.parsed.y;
+            let status = '';
+            if (value === 0) {
+              status = ' (No sales)';
+            } else if (value === maxDaily) {
+              status = ' (Best day)';
+            } else if (value === minDaily) {
+              status = ' (Worst day)';
+            }
+            return `Revenue: ${formatCurrency(value)}${status}`;
           },
         },
       },
@@ -204,13 +247,9 @@ export const DailySalesChart: React.FC<{histories: any}> = ({histories}) => {
   // Calculate total for the month
   const monthTotal = revenueData.reduce((sum, value) => sum + value, 0);
   const averageDaily = revenueData.length > 0 ? monthTotal / revenueData.length : 0;
-  const maxDaily = Math.max(...revenueData, 0);
- const daysWithSalesArray = revenueData.filter(value => value > 0);
   const daysWithSales = daysWithSalesArray.length;
-  const minDaily = daysWithSalesArray.length > 0 ? Math.min(...daysWithSalesArray) : 0;
-  // Ajoutez ces deux lignes après vos calculs existants :
-const maxDaysCount = revenueData.filter(value => value === maxDaily).length;
-const minDaysCount = daysWithSalesArray.length > 0 ? daysWithSalesArray.filter(value => value === minDaily).length : 0;
+  const maxDaysCount = revenueData.filter(value => value === maxDaily).length;
+  const minDaysCount = daysWithSalesArray.length > 0 ? daysWithSalesArray.filter(value => value === minDaily).length : 0;
 
   return (
     <Card className="w-full">
@@ -250,6 +289,22 @@ const minDaysCount = daysWithSalesArray.length > 0 ? daysWithSalesArray.filter(v
                   </SelectItem>
                 ))}
               </Select>
+            </div>
+          </div>
+
+          {/* Color legend */}
+          <div className="flex flex-wrap gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-green-500 rounded"></div>
+              <span>Best day</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-red-500 rounded"></div>
+              <span>Worst day</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-blue-500 rounded"></div>
+              <span>Other days</span>
             </div>
           </div>
 
