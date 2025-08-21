@@ -265,7 +265,7 @@ const minDaysCount = daysWithSalesArray.length > 0 ? daysWithSalesArray.filter(v
             </div>
             <div className="bg-default-100 rounded-lg p-3">
               <p className="text-sm text-default-500">Best Day / Wost Day</p>
-              <p className="text-lg font-bold text-warning">{formatCurrency(maxDaily)}({maxDaysCount}) / {formatCurrency(minDaily)}</p>
+              <p className="text-lg font-bold text-warning">{formatCurrency(maxDaily)}( {maxDaysCount} X) / {formatCurrency(minDaily)}( {minDaysCount} X)</p>
             </div>
             <div className="bg-default-100 rounded-lg p-3">
               <p className="text-sm text-default-500">Active Days</p>
