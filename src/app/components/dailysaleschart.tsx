@@ -208,6 +208,9 @@ export const DailySalesChart: React.FC<{histories: any}> = ({histories}) => {
  const daysWithSalesArray = revenueData.filter(value => value > 0);
   const daysWithSales = daysWithSalesArray.length;
   const minDaily = daysWithSalesArray.length > 0 ? Math.min(...daysWithSalesArray) : 0;
+  // Ajoutez ces deux lignes après vos calculs existants :
+const maxDaysCount = revenueData.filter(value => value === maxDaily).length;
+const minDaysCount = daysWithSalesArray.length > 0 ? daysWithSalesArray.filter(value => value === minDaily).length : 0;
 
   return (
     <Card className="w-full">
@@ -262,7 +265,7 @@ export const DailySalesChart: React.FC<{histories: any}> = ({histories}) => {
             </div>
             <div className="bg-default-100 rounded-lg p-3">
               <p className="text-sm text-default-500">Best Day / Wost Day</p>
-              <p className="text-lg font-bold text-warning">{formatCurrency(maxDaily)} / {formatCurrency(minDaily)}</p>
+              <p className="text-lg font-bold text-warning">{formatCurrency(maxDaily)}({maxDaysCount}) / {formatCurrency(minDaily)}</p>
             </div>
             <div className="bg-default-100 rounded-lg p-3">
               <p className="text-sm text-default-500">Active Days</p>
