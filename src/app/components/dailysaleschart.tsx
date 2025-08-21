@@ -254,24 +254,34 @@ const minDaysCount = daysWithSalesArray.length > 0 ? daysWithSalesArray.filter(v
           </div>
 
           {/* Statistics cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="bg-default-100 rounded-lg p-3">
-              <p className="text-sm text-default-500">Total Revenue</p>
-              <p className="text-lg font-bold text-success">{formatCurrency(monthTotal)}</p>
-            </div>
-            <div className="bg-default-100 rounded-lg p-3">
-              <p className="text-sm text-default-500">Daily Average</p>
-              <p className="text-lg font-bold text-primary">{formatCurrency(averageDaily)}</p>
-            </div>
-            <div className="bg-default-100 rounded-lg p-3">
-              <p className="text-sm text-default-500">Best Day / Wost Day</p>
-              <p className="text-lg font-bold text-warning">{formatCurrency(maxDaily)}( {maxDaysCount} X) / {formatCurrency(minDaily)}( {minDaysCount} X)</p>
-            </div>
-            <div className="bg-default-100 rounded-lg p-3">
-              <p className="text-sm text-default-500">Active Days</p>
-              <p className="text-lg font-bold text-secondary">{daysWithSales} / {daysInSelectedMonth}</p>
-            </div>
-          </div>
+         <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+  <div className="bg-default-100 rounded-lg p-3">
+    <p className="text-sm text-default-500">Total Revenue</p>
+    <p className="text-lg font-bold text-success">{formatCurrency(monthTotal)}</p>
+  </div>
+  <div className="bg-default-100 rounded-lg p-3">
+    <p className="text-sm text-default-500">Daily Average</p>
+    <p className="text-lg font-bold text-primary">{formatCurrency(averageDaily)}</p>
+  </div>
+  <div className="bg-default-100 rounded-lg p-3">
+    <p className="text-sm text-default-500">Best Day</p>
+    <p className="text-lg font-bold text-warning">{formatCurrency(maxDaily)}</p>
+    <p className="text-xs text-default-400">{maxDaysCount} day(s)</p>
+  </div>
+  <div className="bg-default-100 rounded-lg p-3">
+    <p className="text-sm text-default-500">Worst Day</p>
+    <p className="text-lg font-bold text-danger">
+      {minDaily === 0 ? 'No sales' : formatCurrency(minDaily)}
+    </p>
+    <p className="text-xs text-default-400">
+      {minDaily === 0 ? '0 days' : `${minDaysCount} day(s)`}
+    </p>
+  </div>
+  <div className="bg-default-100 rounded-lg p-3">
+    <p className="text-sm text-default-500">Active Days</p>
+    <p className="text-lg font-bold text-secondary">{daysWithSales} / {daysInSelectedMonth}</p>
+  </div>
+</div>
 
           {/* Chart */}
           <div className="h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px]">
