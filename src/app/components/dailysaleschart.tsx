@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardBody, Select, SelectItem } from '@nextui-org/react';
+import { Card, CardBody, Select, SelectItem, Switch } from '@nextui-org/react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -50,7 +50,9 @@ export const DailySalesChart: React.FC<{histories: any}> = ({histories}) => {
   
   const [selectedYear, setSelectedYear] = useState(currentYear.toString());
   const [selectedMonth, setSelectedMonth] = useState(currentMonth.toString());
+  const [showFrequency, setShowFrequency] = useState(false);
   const [revenueData, setRevenueData] = useState<number[]>([]);
+  const [frequencyData, setFrequencyData] = useState<number[]>([]);
   const [years, setYears] = useState<string[]>([]);
   const [availableMonths, setAvailableMonths] = useState<string[]>([]);
   
@@ -104,10 +106,11 @@ export const DailySalesChart: React.FC<{histories: any}> = ({histories}) => {
     const month = parseInt(selectedMonth);
     const daysInMonth = getDaysInMonth(year, month);
     
-    // Initialize array with zeros for each day of the month
+    // Initialize arrays with zeros for each day of the month
     const dailyRevenue = new Array(daysInMonth).fill(0);
+    const dailyFrequency = new Array(daysInMonth).fill(0);
     
-    // Process histories to sum up revenue by day for the selected month/year
+    // Process histories to sum up revenue and count sales by day for the selected month/year
     histories.forEach((history: any) => {
       const date = new Date(history.created_at);
       const historyYear = date.getFullYear();
@@ -116,24 +119,27 @@ export const DailySalesChart: React.FC<{histories: any}> = ({histories}) => {
       if (historyYear === year && historyMonth === month) {
         const day = date.getDate() - 1; // 0-indexed for array
         dailyRevenue[day] += history.price;
+        dailyFrequency[day] += 1;
       }
     });
     
     setRevenueData(dailyRevenue);
+    setFrequencyData(dailyFrequency);
   }, [selectedYear, selectedMonth, histories]);
 
   // Generate labels for days of the month
   const daysInSelectedMonth = getDaysInMonth(parseInt(selectedYear), parseInt(selectedMonth));
   const dayLabels = Array.from({ length: daysInSelectedMonth }, (_, i) => (i + 1).toString());
 
-  // Calculate min and max values for coloring
-  const daysWithSalesArray = revenueData.filter(value => value > 0);
-  const maxDaily = Math.max(...revenueData, 0);
+  // Calculate min and max values for coloring based on current view
+  const currentData = showFrequency ? frequencyData : revenueData;
+  const daysWithSalesArray = currentData.filter(value => value > 0);
+  const maxDaily = Math.max(...currentData, 0);
   const minDaily = daysWithSalesArray.length > 0 ? Math.min(...daysWithSalesArray) : 0;
 
   // Generate colors for each bar based on value
   const getBarColors = () => {
-    return revenueData.map(value => {
+    return currentData.map(value => {
       if (value === 0) {
         return 'rgba(59, 130, 246, 0.7)'; // Blue for zero/no sales
       } else if (value === maxDaily) {
@@ -147,7 +153,7 @@ export const DailySalesChart: React.FC<{histories: any}> = ({histories}) => {
   };
 
   const getBorderColors = () => {
-    return revenueData.map(value => {
+    return currentData.map(value => {
       if (value === 0) {
         return 'rgb(59, 130, 246)'; // Blue border
       } else if (value === maxDaily) {
@@ -164,8 +170,8 @@ export const DailySalesChart: React.FC<{histories: any}> = ({histories}) => {
     labels: dayLabels,
     datasets: [
       {
-        label: 'Daily Revenue',
-        data: revenueData,
+        label: showFrequency ? 'Number of Sales' : 'Daily Revenue',
+        data: currentData,
         backgroundColor: getBarColors(),
         borderColor: getBorderColors(),
         borderWidth: 1,
@@ -183,7 +189,7 @@ export const DailySalesChart: React.FC<{histories: any}> = ({histories}) => {
       },
       title: {
         display: true,
-        text: `Daily Sales - ${getMonthName(parseInt(selectedMonth))} ${selectedYear}`,
+        text: `Daily ${showFrequency ? 'Sales Frequency' : 'Revenue'} - ${getMonthName(parseInt(selectedMonth))} ${selectedYear}`,
         font: {
           size: 16,
           weight: 600 
@@ -199,6 +205,9 @@ export const DailySalesChart: React.FC<{histories: any}> = ({histories}) => {
           },
           label: (context: { parsed: { y: number; }; }) => {
             const value = context.parsed.y;
+            const revenueValue = revenueData[context.dataIndex];
+            const frequencyValue = frequencyData[context.dataIndex];
+            
             let status = '';
             if (value === 0) {
               status = ' (No sales)';
@@ -207,7 +216,18 @@ export const DailySalesChart: React.FC<{histories: any}> = ({histories}) => {
             } else if (value === minDaily) {
               status = ' (Worst day)';
             }
-            return `Revenue: ${formatCurrency(value)}${status}`;
+            
+            if (showFrequency) {
+              return [
+                `Sales: ${frequencyValue} transaction${frequencyValue !== 1 ? 's' : ''}${status}`,
+                `Revenue: ${formatCurrency(revenueValue)}`
+              ];
+            } else {
+              return [
+                `Revenue: ${formatCurrency(revenueValue)}${status}`,
+                `Sales: ${frequencyValue} transaction${frequencyValue !== 1 ? 's' : ''}`
+              ];
+            }
           },
         },
       },
@@ -229,13 +249,19 @@ export const DailySalesChart: React.FC<{histories: any}> = ({histories}) => {
         beginAtZero: true,
         title: {
           display: true,
-          text: 'Revenue (HTG)',
+          text: showFrequency ? 'Number of Sales' : 'Revenue (HTG)',
           font: {
             size: 14,
           },
         },
         ticks: {
-          callback: (value: any) => formatCurrency(Number(value)),
+          callback: (value: any) => {
+            if (showFrequency) {
+              return Number(value);
+            } else {
+              return formatCurrency(Number(value));
+            }
+          },
         },
       },
     },
@@ -244,12 +270,18 @@ export const DailySalesChart: React.FC<{histories: any}> = ({histories}) => {
     },
   };
 
-  // Calculate total for the month
+  // Calculate statistics
   const monthTotal = revenueData.reduce((sum, value) => sum + value, 0);
+  const totalTransactions = frequencyData.reduce((sum, value) => sum + value, 0);
   const averageDaily = revenueData.length > 0 ? monthTotal / revenueData.length : 0;
-  const daysWithSales = daysWithSalesArray.length;
-  const maxDaysCount = revenueData.filter(value => value === maxDaily).length;
-  const minDaysCount = daysWithSalesArray.length > 0 ? daysWithSalesArray.filter(value => value === minDaily).length : 0;
+  const averageTransactionsDaily = frequencyData.length > 0 ? totalTransactions / frequencyData.length : 0;
+  const averageTransactionValue = totalTransactions > 0 ? monthTotal / totalTransactions : 0;
+  const daysWithSales = frequencyData.filter(value => value > 0).length;
+  
+  const maxRevenueDaily = Math.max(...revenueData, 0);
+  const maxFrequencyDaily = Math.max(...frequencyData, 0);
+  const revenueMaxDaysCount = revenueData.filter(value => value === maxRevenueDaily).length;
+  const frequencyMaxDaysCount = frequencyData.filter(value => value === maxFrequencyDaily).length;
 
   return (
     <Card className="w-full">
@@ -258,37 +290,49 @@ export const DailySalesChart: React.FC<{histories: any}> = ({histories}) => {
           {/* Header with controls */}
           <div className="flex justify-between items-center flex-wrap gap-4">
             <h2 className="text-xl sm:text-2xl font-bold text-default-900">
-              Daily Revenue Overview
+              Daily Sales Overview
             </h2>
-            <div className="flex gap-2">
-              <Select
-                label="Year"
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
-                className="w-28 sm:w-32"
-              >
-                {years.map((year) => (
-                  <SelectItem key={year} value={year}>
-                    {year}
-                  </SelectItem>
-                ))}
-              </Select>
-              <Select
-                label="Month"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="w-32 sm:w-40"
-              >
-                {months.map((month) => (
-                  <SelectItem 
-                    key={month.value} 
-                    value={month.value}
-                    isDisabled={availableMonths.length > 0 && !availableMonths.includes(month.value)}
-                  >
-                    {month.label}
-                  </SelectItem>
-                ))}
-              </Select>
+            <div className="flex gap-4 items-center">
+              <div className="flex items-center gap-2">
+                <Switch 
+                  isSelected={showFrequency}
+                  onValueChange={setShowFrequency}
+                  size="sm"
+                />
+                <span className="text-sm font-medium">
+                  {showFrequency ? 'Show Frequency' : 'Show Revenue'}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <Select
+                  label="Year"
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  className="w-28 sm:w-32"
+                >
+                  {years.map((year) => (
+                    <SelectItem key={year} value={year}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </Select>
+                <Select
+                  label="Month"
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="w-32 sm:w-40"
+                >
+                  {months.map((month) => (
+                    <SelectItem 
+                      key={month.value} 
+                      value={month.value}
+                      isDisabled={availableMonths.length > 0 && !availableMonths.includes(month.value)}
+                    >
+                      {month.label}
+                    </SelectItem>
+                  ))}
+                </Select>
+              </div>
             </div>
           </div>
 
@@ -309,34 +353,34 @@ export const DailySalesChart: React.FC<{histories: any}> = ({histories}) => {
           </div>
 
           {/* Statistics cards */}
-         <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-  <div className="bg-default-100 rounded-lg p-3">
-    <p className="text-sm text-default-500">Total Revenue</p>
-    <p className="text-lg font-bold text-success">{formatCurrency(monthTotal)}</p>
-  </div>
-  <div className="bg-default-100 rounded-lg p-3">
-    <p className="text-sm text-default-500">Daily Average</p>
-    <p className="text-lg font-bold text-primary">{formatCurrency(averageDaily)}</p>
-  </div>
-  <div className="bg-default-100 rounded-lg p-3">
-    <p className="text-sm text-default-500">Best Day</p>
-    <p className="text-lg font-bold text-warning">{formatCurrency(maxDaily)}</p>
-    <p className="text-xs text-default-400">{maxDaysCount} day(s)</p>
-  </div>
-  <div className="bg-default-100 rounded-lg p-3">
-    <p className="text-sm text-default-500">Worst Day</p>
-    <p className="text-lg font-bold text-danger">
-      {minDaily === 0 ? 'No sales' : formatCurrency(minDaily)}
-    </p>
-    <p className="text-xs text-default-400">
-      {minDaily === 0 ? '0 days' : `${minDaysCount} day(s)`}
-    </p>
-  </div>
-  <div className="bg-default-100 rounded-lg p-3">
-    <p className="text-sm text-default-500">Active Days</p>
-    <p className="text-lg font-bold text-secondary">{daysWithSales} / {daysInSelectedMonth}</p>
-  </div>
-</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="bg-default-100 rounded-lg p-3">
+              <p className="text-sm text-default-500">Total Revenue</p>
+              <p className="text-lg font-bold text-success">{formatCurrency(monthTotal)}</p>
+            </div>
+            <div className="bg-default-100 rounded-lg p-3">
+              <p className="text-sm text-default-500">Total Sales</p>
+              <p className="text-lg font-bold text-primary">{totalTransactions}</p>
+            </div>
+            <div className="bg-default-100 rounded-lg p-3">
+              <p className="text-sm text-default-500">Avg. Transaction</p>
+              <p className="text-lg font-bold text-secondary">{formatCurrency(averageTransactionValue)}</p>
+            </div>
+            <div className="bg-default-100 rounded-lg p-3">
+              <p className="text-sm text-default-500">Best Revenue Day</p>
+              <p className="text-lg font-bold text-warning">{formatCurrency(maxRevenueDaily)}</p>
+              <p className="text-xs text-default-400">{revenueMaxDaysCount} day(s)</p>
+            </div>
+            <div className="bg-default-100 rounded-lg p-3">
+              <p className="text-sm text-default-500">Most Sales Day</p>
+              <p className="text-lg font-bold text-warning">{maxFrequencyDaily} sales</p>
+              <p className="text-xs text-default-400">{frequencyMaxDaysCount} day(s)</p>
+            </div>
+            <div className="bg-default-100 rounded-lg p-3">
+              <p className="text-sm text-default-500">Active Days</p>
+              <p className="text-lg font-bold text-secondary">{daysWithSales} / {daysInSelectedMonth}</p>
+            </div>
+          </div>
 
           {/* Chart */}
           <div className="h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px]">
