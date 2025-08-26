@@ -203,7 +203,7 @@ export const DailySalesChart: React.FC<{histories: any}> = ({histories}) => {
             const day = context[0].label;
             return `${getMonthName(parseInt(selectedMonth))} ${day}, ${selectedYear}`;
           },
-          label: (context: { parsed: { y: number; }; }) => {
+          label: (context: any) => {
             const value = context.parsed.y;
             const revenueValue = revenueData[context.dataIndex];
             const frequencyValue = frequencyData[context.dataIndex];
