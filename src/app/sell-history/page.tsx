@@ -1,26 +1,33 @@
-import React, { useState, useEffect } from 'react';
-import {
+'use client';
+
+import React, { useState, useEffect, useRef } from 'react';
+import { AnimatePresence } from 'framer-motion';
+import AppLayout from '../components/AppLayout';
+import { LoadingAnimation } from '../components/LoadingAnimation';
+import { 
+  Table, 
+  TableHeader, 
+  TableColumn, 
+  TableBody, 
+  TableRow, 
+  TableCell,
   Card,
   CardHeader,
   CardBody,
   Divider,
+  Chip,
   Button,
   Dropdown,
   DropdownTrigger,
   DropdownMenu,
   DropdownItem,
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-  Chip,
+  Pagination,
   Input,
-  Spinner
+  Tabs,
+  Tab
 } from "@nextui-org/react";
-import { FaCalendarAlt, FaDownload, FaPrint, FaFileExport, FaCalculator, FaShare } from 'react-icons/fa';
-import { motion, AnimatePresence } from 'framer-motion';
+import { FaCalendarAlt, FaFilter, FaSearch, FaUser, FaClock, FaCalculator, FaShare } from 'react-icons/fa';
+import { motion } from 'framer-motion';
 
 interface User {
   _id: string;
@@ -36,7 +43,7 @@ interface Sold {
   status: string;
   profile: string;
   name: string;
-  number: string;
+  number:string;
   duration_hour: string;
   price: number;
   by: string;
@@ -45,464 +52,964 @@ interface Sold {
   __v: number;
 }
 
-interface ReportData {
-  vendorId: string;
-  vendorName: string;
-  commission70: number;
-  totalVente: number;
-  montantSysteme: number;
-  salesCount: number;
-}
-
-export default function ReportsSection() {
+export default function SellHistory() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
   const [users, setUsers] = useState<User[]>([]);
   const [solds, setSolds] = useState<Sold[]>([]);
-  const [reportData, setReportData] = useState<ReportData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-  const [showShareModal, setShowShareModal] = useState(false);
-
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [userSolds, setUserSolds] = useState<Sold[]>([]);
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  // Get current date for default filter values
+  const currentDate = new Date();
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(currentDate.getMonth());
+  const [selectedYear, setSelectedYear] = useState<number | null>(currentDate.getFullYear());
+  
+  const [showCommissionCard, setShowCommissionCard] = useState(false);
+  const [commissionData, setCommissionData] = useState<{
+    vendorName: string;
+    month: string;
+    year: number;
+    totalSales: number;
+    vendorPercentage: number;
+    vendorCommission: number;
+    systemPercentage: number;
+    systemAmount: number;
+  } | null>(null);
+  
+  const rowsPerPage = 10;
   const months = [
-    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
   ];
-
+  
+  // Get current year for filtering
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
-  // Simulation des données - remplacez par vos vrais appels API
   useEffect(() => {
     const fetchData = async () => {
-      setIsLoading(true);
       try {
-        // Simulation des données utilisateurs
-        const mockUsers = [
-          { _id: '1', complete_name: 'Admini', name: 'Admin', user_number: 'U001', type: 'SYSTEM_ADMINISTRATOR', created_at: '2024-01-01' },
-          { _id: '2', complete_name: 'Bella', name: 'Bella', user_number: 'V001', type: 'VENDOR', created_at: '2024-01-01' },
-          { _id: '3', complete_name: 'Cherubin', name: 'Cherubin', user_number: 'V002', type: 'VENDOR', created_at: '2024-01-01' },
-          { _id: '4', complete_name: 'Joanis', name: 'Joanis', user_number: 'V003', type: 'VENDOR', created_at: '2024-01-01' }
-        ];
+        // Fetch users
+        const usersResponse = await fetch('/api/items?table=users&params=' + encodeURIComponent(JSON.stringify({ type: { $in: ['VENDOR', 'SYSTEM_ADMINISTRATOR'] } })));
+        const usersData = await usersResponse.json();
 
-        // Simulation des ventes
-        const mockSolds = [
-          { _id: { $oid: '1' }, status: 'COMPLETED', profile: 'Profile A', name: 'Client 1', number: 'C001', duration_hour: '2', price: 50000, by: '2', comment: '', date: { $date: '2024-08-15T10:00:00Z' }, __v: 0 },
-          { _id: { $oid: '2' }, status: 'COMPLETED', profile: 'Profile B', name: 'Client 2', number: 'C002', duration_hour: '3', price: 75000, by: '2', comment: '', date: { $date: '2024-08-16T14:00:00Z' }, __v: 0 },
-          { _id: { $oid: '3' }, status: 'COMPLETED', profile: 'Profile C', name: 'Client 3', number: 'C003', duration_hour: '1', price: 30000, by: '3', comment: '', date: { $date: '2024-08-17T09:00:00Z' }, __v: 0 },
-          { _id: { $oid: '4' }, status: 'COMPLETED', profile: 'Profile D', name: 'Client 4', number: 'C004', duration_hour: '4', price: 100000, by: '3', comment: '', date: { $date: '2024-08-18T16:00:00Z' }, __v: 0 },
-          { _id: { $oid: '5' }, status: 'COMPLETED', profile: 'Profile E', name: 'Client 5', number: 'C005', duration_hour: '2', price: 60000, by: '4', comment: '', date: { $date: '2024-08-19T11:00:00Z' }, __v: 0 },
-        ];
-
-        setUsers(mockUsers);
-        setSolds(mockSolds);
+        console.log(usersData); // Log the first user to see the structure
         
-        // Générer les données du rapport
-        generateReportData(mockUsers, mockSolds);
+        // Fetch solds
+        const soldsResponse = await fetch('/api/items?table=solds');
+        const soldsData = await soldsResponse.json();
+        const finalResult:any = []
+        for (const user of usersData) {
+          finalResult.push({
+            _id : user._id,
+            complete_name: user.lastname,
+            name: user.name,
+            user_number: user.user_number,
+            type: user.type,
+            created_at: user.created_at
+          })
+        }
+        setUsers(finalResult); // Set the entire array of users
+        setSolds(soldsData);
+
+        console.log(finalResult)
+        
+        // Filter users who are clients or system administrators
+        const filteredUsers = usersData.filter((user: User) => 
+          user.type === 'VENDOR' || user.type === 'SYSTEM_ADMINISTRATOR'
+        );
+        
+        setFilteredUsers(finalResult);
       } catch (error) {
-        console.error('Erreur lors du chargement des données:', error);
+        console.error('Error fetching data:', error);
+        setError('Failed to fetch data');
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchData();
-  }, [selectedMonth, selectedYear]);
+  }, []);
 
-  const generateReportData = (users: User[], solds: Sold[]) => {
-    const vendors = users.filter(user => user.type === 'VENDOR');
-    const reports: ReportData[] = [];
+  // Handle user selection
+  const handleUserSelect = (user: User) => {
+    setSelectedUser(user);
+    
+    // Filter solds for the selected user
+    const userSolds = solds.filter(sold => sold.by === user._id);
+    setUserSolds(userSolds);
+    
+    // Set filters to current month and year
+    const currentDate = new Date();
+    setSelectedMonth(currentDate.getMonth());
+    setSelectedYear(currentDate.getFullYear());
+    
+    // Reset pagination
+    setCurrentPage(1);
+  };
 
-    vendors.forEach(vendor => {
-      // Filtrer les ventes par vendeur et période
-      const vendorSales = solds.filter(sold => {
-        if (sold.by !== vendor._id) return false;
-        
-        const saleDate = new Date(sold.date.$date);
-        return saleDate.getMonth() === selectedMonth && 
-               saleDate.getFullYear() === selectedYear &&
-               sold.status === 'COMPLETED';
+  // Handle search
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      // If search query is empty, show all filtered users
+      const filtered = users.filter(user => 
+        user.type === 'VENDOR' || user.type === 'SYSTEM_ADMINISTRATOR'
+      );
+      setFilteredUsers(filtered);
+    } else {
+      // Filter users based on search query
+      const filtered = users.filter(user => 
+        (user.type === 'VENDOR' || user.type === 'SYSTEM_ADMINISTRATOR') &&
+        (user.complete_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+         user.user_number?.toLowerCase().includes(searchQuery.toLowerCase())));
+      setFilteredUsers(filtered);
+    }
+    setCurrentPage(1); // Reset to first page when searching
+  }, [searchQuery, users]);
+
+  // Filter user solds by month and year
+  const getFilteredSolds = () => {
+    if (!selectedUser) return [];
+    
+    let filtered = [...userSolds];
+    
+    if (selectedMonth !== null) {
+      filtered = filtered.filter(sold => {
+        try {
+          // Handle MongoDB date format
+          let dateObj;
+          if (sold.date && typeof sold.date === 'object' && '$date' in sold.date) {
+            dateObj = new Date(sold.date.$date as string);
+          } else {
+            dateObj = new Date(sold.date as string | number);
+          }
+          
+          return dateObj.getMonth() === selectedMonth;
+        } catch (error) {
+          console.error('Error filtering by month:', error);
+          return false;
+        }
       });
-
-      const totalVente = vendorSales.reduce((sum, sale) => sum + sale.price, 0);
-      const commission70 = Math.round(totalVente * 0.10); // 10% pour le vendeur
-      const montantSysteme = Math.round(totalVente * 0.90); // 90% pour le système
-
-      if (totalVente > 0) {
-        reports.push({
-          vendorId: vendor._id,
-          vendorName: vendor.complete_name,
-          commission70: commission70,
-          totalVente: totalVente,
-          montantSysteme: montantSysteme,
-          salesCount: vendorSales.length
-        });
+    }
+    
+    if (selectedYear !== null) {
+      filtered = filtered.filter(sold => {
+        try {
+          // Handle MongoDB date format
+          let dateObj;
+          if (sold.date && typeof sold.date === 'object' && '$date' in sold.date) {
+            dateObj = new Date(sold.date.$date as string);
+          } else {
+            dateObj = new Date(sold.date as string | number);
+          }
+          
+          return dateObj.getFullYear() === selectedYear;
+        } catch (error) {
+          console.error('Error filtering by year:', error);
+          return false;
+        }
+      });
+    }
+    
+    // Sort by date - most recent first (descending order)
+    filtered.sort((a, b) => {
+      try {
+        let dateA, dateB;
+        
+        // Handle MongoDB date format for item a
+        if (a.date && typeof a.date === 'object' && '$date' in a.date) {
+          dateA = new Date(a.date.$date as string);
+        } else {
+          dateA = new Date(a.date as string | number);
+        }
+        
+        // Handle MongoDB date format for item b
+        if (b.date && typeof b.date === 'object' && '$date' in b.date) {
+          dateB = new Date(b.date.$date as string);
+        } else {
+          dateB = new Date(b.date as string | number);
+        }
+        
+        // Sort in descending order (most recent first)
+        return dateB.getTime() - dateA.getTime();
+      } catch (error) {
+        console.error('Error sorting by date:', error);
+        return 0;
       }
     });
-
-    setReportData(reports);
+    
+    return filtered;
   };
 
-  const calculateTotals = () => {
-    return reportData.reduce((totals, report) => ({
-      totalCommission: totals.totalCommission + report.commission70,
-      totalVentes: totals.totalVentes + report.totalVente,
-      totalSysteme: totals.totalSysteme + report.montantSysteme
-    }), { totalCommission: 0, totalVentes: 0, totalSysteme: 0 });
-  };
+  // Pagination logic
+  const filteredSolds = getFilteredSolds();
+  const totalPages = Math.ceil(filteredSolds.length / rowsPerPage);
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const paginatedSolds = filteredSolds.slice(startIndex, startIndex + rowsPerPage);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'XOF',
-      minimumFractionDigits: 0
-    }).format(amount);
-  };
-
-  const exportToCSV = () => {
-    const headers = ['Nom', '10% Commission', 'Total Vente', 'Montant Système'];
-    const csvContent = [
-      headers.join(','),
-      ...reportData.map(row => [
-        row.vendorName,
-        row.commission70,
-        row.totalVente,
-        row.montantSysteme
-      ].join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `rapport-${months[selectedMonth]}-${selectedYear}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const printReport = () => {
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      const totals = calculateTotals();
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Rapport ${months[selectedMonth]} ${selectedYear}</title>
-            <style>
-              body { font-family: Arial, sans-serif; margin: 20px; }
-              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-              th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-              th { background-color: #f5f5f5; font-weight: bold; }
-              .total-row { background-color: #e3f2fd; font-weight: bold; }
-              .header { text-align: center; margin-bottom: 30px; }
-              .date { color: #666; font-size: 14px; }
-            </style>
-          </head>
-          <body>
-            <div class="header">
-              <h1>RAPPORTS</h1>
-              <p class="date">${months[selectedMonth]} ${selectedYear}</p>
-            </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>Nom</th>
-                  <th>10% Commission</th>
-                  <th>Total Vente</th>
-                  <th>Montant Système</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${reportData.map(report => `
-                  <tr>
-                    <td>${report.vendorName}</td>
-                    <td>${formatCurrency(report.commission70)}</td>
-                    <td>${formatCurrency(report.totalVente)}</td>
-                    <td>${formatCurrency(report.montantSysteme)}</td>
-                  </tr>
-                `).join('')}
-                <tr class="total-row">
-                  <td><strong>Total</strong></td>
-                  <td><strong>${formatCurrency(totals.totalCommission)}</strong></td>
-                  <td><strong>${formatCurrency(totals.totalVentes)}</strong></td>
-                  <td><strong>${formatCurrency(totals.totalSysteme)}</strong></td>
-                </tr>
-              </tbody>
-            </table>
-            <script>window.print(); window.onafterprint = function() { window.close(); };</script>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-    }
-  };
-
-  const shareReport = async () => {
-    const totals = calculateTotals();
-    const reportText = `
-📊 RAPPORT ${months[selectedMonth].toUpperCase()} ${selectedYear}
-
-${reportData.map(report => 
-  `👤 ${report.vendorName}
-💰 Commission: ${formatCurrency(report.commission70)}
-💵 Ventes: ${formatCurrency(report.totalVente)}
-🏢 Système: ${formatCurrency(report.montantSysteme)}`
-).join('\n\n')}
-
-📋 TOTAUX:
-💰 Total Commissions: ${formatCurrency(totals.totalCommission)}
-💵 Total Ventes: ${formatCurrency(totals.totalVentes)}
-🏢 Total Système: ${formatCurrency(totals.totalSysteme)}
-
-📅 Généré le ${new Date().toLocaleDateString('fr-FR')}
-    `.trim();
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `Rapport ${months[selectedMonth]} ${selectedYear}`,
-          text: reportText,
-        });
-      } catch (error) {
-        console.log('Partage annulé');
+  // Format date
+  const formatDate = (dateObj: any): JSX.Element | string => {
+    try {
+      // Check if the date is in MongoDB format with $date field
+      if (dateObj && typeof dateObj === 'object' && '$date' in dateObj) {
+        const date = new Date(dateObj.$date as string);
+        if (isNaN(date.getTime())) {
+          return 'N/A'; // Return N/A for invalid dates
+        }
+        return (
+          <div className="flex flex-col">
+            <span className="font-medium">
+              {date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+              })}
+            </span>
+            <span className="text-xs text-default-500">
+              {date.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </span>
+          </div>
+        );
       }
-    } else {
-      // Fallback: copier dans le presse-papiers
-      navigator.clipboard.writeText(reportText).then(() => {
-        alert('Rapport copié dans le presse-papiers!');
-      });
+      
+      // Regular date string
+      const date = new Date(dateObj as string | number);
+      if (isNaN(date.getTime())) {
+        return 'N/A'; // Return N/A for invalid dates
+      }
+      return (
+        <div className="flex flex-col">
+          <span className="font-medium">
+            {date.toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric'
+            })}
+          </span>
+          <span className="text-xs text-default-500">
+            {date.toLocaleTimeString('en-US', {
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
+          </span>
+        </div>
+      );
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'N/A';
     }
   };
 
-  const totals = calculateTotals();
+  // Calculate total sales for the selected user
+  const calculateTotalSales = () => {
+    return filteredSolds.reduce((total, sold) => total + sold.price, 0);
+  };
+
+  // Calculate commission for vendor
+  const calculateCommission = () => {
+    const totalSales = calculateTotalSales();
+    const vendorPercentage = 10; // 10% pour le vendeur
+    const vendorCommission = (totalSales * vendorPercentage) / 100;
+    const systemPercentage = 90; // 90% pour le système
+    const systemAmount = (totalSales * systemPercentage) / 100;
+    
+    setCommissionData({
+      vendorName: selectedUser?.complete_name || 'Unknown',
+      month: selectedMonth !== null ? months[selectedMonth] : 'All months',
+      year: selectedYear || currentYear,
+      totalSales,
+      vendorPercentage,
+      vendorCommission,
+      systemPercentage,
+      systemAmount
+    });
+    setShowCommissionCard(true);
+  };
+
+  // Share commission card as image
+  const shareCommissionCard = async () => {
+    const element = document.getElementById('commission-card');
+    if (!element) return;
+    
+    try {
+      // Create a temporary canvas to draw the card
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      // Set canvas size
+      canvas.width = 400;
+      canvas.height = 600;
+      
+      // Draw background
+      ctx.fillStyle = '#f3f4f6';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw content manually (since html2canvas is not available)
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(20, 20, canvas.width - 40, canvas.height - 40);
+      
+      // Add text content
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 24px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('Commission Report', canvas.width / 2, 60);
+      
+      ctx.font = '16px Arial';
+      ctx.fillText(`${commissionData?.month} ${commissionData?.year}`, canvas.width / 2, 90);
+      
+      ctx.font = '18px Arial';
+      ctx.fillText(`Vendor: ${commissionData?.vendorName}`, canvas.width / 2, 130);
+      
+      ctx.font = 'bold 20px Arial';
+      ctx.fillText(`Total Sales: $${commissionData?.totalSales.toLocaleString()}`, canvas.width / 2, 180);
+      
+      ctx.fillStyle = '#10b981';
+      ctx.font = '18px Arial';
+      ctx.fillText(`Vendor (${commissionData?.vendorPercentage}%): $${commissionData?.vendorCommission.toLocaleString()}`, canvas.width / 2, 230);
+      
+      ctx.fillStyle = '#3b82f6';
+      ctx.fillText(`System (${commissionData?.systemPercentage}%): $${commissionData?.systemAmount.toLocaleString()}`, canvas.width / 2, 270);
+      
+      // Convert to blob
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        
+        const file = new File([blob], 'commission-report.png', { type: 'image/png' });
+        
+        if (navigator.share && navigator.canShare({ files: [file] })) {
+          navigator.share({
+            files: [file],
+            title: 'Commission Report',
+            text: `Commission report for ${commissionData?.vendorName} - ${commissionData?.month} ${commissionData?.year}`
+          }).catch(console.error);
+        } else {
+          // Fallback: download the image
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'commission-report.png';
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+      });
+    } catch (error) {
+      console.error('Error generating image:', error);
+    }
+  };
 
   if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Spinner size="lg" color="primary" />
-      </div>
-    );
+    return <LoadingAnimation />;
   }
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="space-y-6"
-      >
-        {/* En-tête */}
-        <Card className="shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-primary/10 to-secondary/10">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center w-full gap-4">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">RAPPORTS</h1>
-                <p className="text-gray-600">Rapport des commissions et ventes par vendeur</p>
-              </div>
-              
-              <div className="flex flex-wrap gap-2">
-                <Dropdown>
-                  <DropdownTrigger>
-                    <Button 
-                      variant="bordered" 
-                      startContent={<FaCalendarAlt />}
-                      className="min-w-32"
-                    >
-                      {months[selectedMonth]}
-                    </Button>
-                  </DropdownTrigger>
-                  <DropdownMenu 
-                    aria-label="Sélection du mois"
-                    onAction={(key) => setSelectedMonth(Number(key))}
-                  >
-                    {months.map((month, index) => (
-                      <DropdownItem key={index}>{month}</DropdownItem>
-                    ))}
-                  </DropdownMenu>
-                </Dropdown>
-                
-                <Dropdown>
-                  <DropdownTrigger>
-                    <Button 
-                      variant="bordered" 
-                      startContent={<FaCalendarAlt />}
-                      className="min-w-24"
-                    >
-                      {selectedYear}
-                    </Button>
-                  </DropdownTrigger>
-                  <DropdownMenu 
-                    aria-label="Sélection de l'année"
-                    onAction={(key) => setSelectedYear(Number(key))}
-                  >
-                    {years.map((year) => (
-                      <DropdownItem key={year}>{year}</DropdownItem>
-                    ))}
-                  </DropdownMenu>
-                </Dropdown>
-              </div>
-            </div>
-          </CardHeader>
-        </Card>
-
-        {/* Actions */}
-        <Card>
-          <CardBody className="py-4">
-            <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-              <Button
-                color="primary"
-                variant="solid"
-                startContent={<FaPrint />}
-                onClick={printReport}
-                size="sm"
-              >
-                Imprimer
-              </Button>
-              <Button
-                color="success"
-                variant="solid"
-                startContent={<FaDownload />}
-                onClick={exportToCSV}
-                size="sm"
-              >
-                Exporter CSV
-              </Button>
-              <Button
-                color="secondary"
-                variant="solid"
-                startContent={<FaShare />}
-                onClick={shareReport}
-                size="sm"
-              >
-                Partager
-              </Button>
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* Tableau principal */}
-        <Card className="shadow-lg">
-          <CardHeader className="bg-default-100">
-            <h2 className="text-xl font-semibold">
-              Détails par Vendeur - {months[selectedMonth]} {selectedYear}
-            </h2>
-          </CardHeader>
-          <Divider />
-          <CardBody className="p-0">
-            {reportData.length > 0 ? (
-              <div className="overflow-x-auto">
-                <Table removeWrapper aria-label="Tableau des rapports">
-                  <TableHeader>
-                    <TableColumn className="bg-gray-50 text-center font-bold">NOM</TableColumn>
-                    <TableColumn className="bg-gray-50 text-center font-bold">10% COMMISSION</TableColumn>
-                    <TableColumn className="bg-gray-50 text-center font-bold">TOTAL VENTE</TableColumn>
-                    <TableColumn className="bg-gray-50 text-center font-bold">MONTANT SYSTÈME</TableColumn>
-                  </TableHeader>
-                  <TableBody>
-                    {reportData.map((report) => (
-                      <TableRow key={report.vendorId} className="hover:bg-gray-50">
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div className="bg-primary/10 w-8 h-8 rounded-full flex items-center justify-center">
-                              <span className="text-primary font-bold text-sm">
-                                {report.vendorName.charAt(0)}
-                              </span>
+    <AppLayout>
+      <div className="container mx-auto px-6 sm:px-8 py-4 sm:py-6 pb-16 md:pb-20">
+        <motion.h2
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-2xl font-semibold mb-4 text-foreground"
+        >
+          Sell History
+        </motion.h2>
+        <p className="text-sm text-default-500 mb-6">View and analyze sales history by user, month, and year</p>
+        
+        {/* Mobile View */}
+        <div className="block md:hidden">
+          <div className="mb-4">
+            <Card className="shadow-md">
+              <CardBody className="p-2">
+                <Input
+                  startContent={<FaSearch className="text-default-400" />}
+                  placeholder="Search users..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full mb-3"
+                  size="sm"
+                  variant="bordered"
+                />
+                <div className="overflow-y-auto max-h-[200px]">
+                  {filteredUsers.length === 0 ? (
+                    <p className="text-center py-4 text-default-400">No users found</p>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      {filteredUsers.map((user) => (
+                        <Button 
+                          key={user._id}
+                          variant={selectedUser?._id === user._id ? "bordered" : "flat"}
+                          color={selectedUser?._id === user._id ? "danger" : "default"}
+                          className={`justify-start text-left py-2 rounded-lg  transition-transform ${selectedUser?._id === user._id ? 'border-danger border-2' : ''}`}
+                          onClick={() => handleUserSelect(user)}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className="bg-primary/10 p-2 rounded-full">
+                              <FaUser className="text-sm text-primary" />
                             </div>
                             <div>
-                              <p className="font-medium">{report.vendorName}</p>
-                              <p className="text-sm text-gray-500">{report.salesCount} vente(s)</p>
+                              <p className="font-medium text-sm">{user.complete_name || 'Unknown User'}</p>
                             </div>
                           </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Chip color="success" variant="flat" className="font-semibold">
-                            {formatCurrency(report.commission70)}
-                          </Chip>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <span className="font-semibold text-primary">
-                            {formatCurrency(report.totalVente)}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Chip color="primary" variant="flat" className="font-semibold">
-                            {formatCurrency(report.montantSysteme)}
-                          </Chip>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    
-                    {/* Ligne des totaux */}
-                    <TableRow className="bg-blue-50 font-bold border-t-2">
-                      <TableCell>
-                        <span className="text-lg font-bold text-gray-800">TOTAL</span>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Chip color="success" variant="solid" className="font-bold">
-                          {formatCurrency(totals.totalCommission)}
-                        </Chip>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <span className="text-lg font-bold text-primary">
-                          {formatCurrency(totals.totalVentes)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Chip color="primary" variant="solid" className="font-bold">
-                          {formatCurrency(totals.totalSysteme)}
-                        </Chip>
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-16">
-                <div className="bg-gray-100 p-6 rounded-full mb-4">
-                  <FaCalculator className="text-4xl text-gray-400" />
+                        </Button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <p className="text-gray-500 text-lg">Aucune vente trouvée</p>
-                <p className="text-gray-400 text-sm mt-2">
-                  pour {months[selectedMonth]} {selectedYear}
-                </p>
-              </div>
-            )}
-          </CardBody>
-        </Card>
-
-        {/* Statistiques résumées */}
-        {reportData.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="bg-gradient-to-br from-success/10 to-success/20">
-              <CardBody className="text-center">
-                <h3 className="text-sm font-medium text-gray-600 mb-2">Total Commissions</h3>
-                <p className="text-2xl font-bold text-success">
-                  {formatCurrency(totals.totalCommission)}
-                </p>
-              </CardBody>
-            </Card>
-            
-            <Card className="bg-gradient-to-br from-primary/10 to-primary/20">
-              <CardBody className="text-center">
-                <h3 className="text-sm font-medium text-gray-600 mb-2">Total Ventes</h3>
-                <p className="text-2xl font-bold text-primary">
-                  {formatCurrency(totals.totalVentes)}
-                </p>
-              </CardBody>
-            </Card>
-            
-            <Card className="bg-gradient-to-br from-secondary/10 to-secondary/20">
-              <CardBody className="text-center">
-                <h3 className="text-sm font-medium text-gray-600 mb-2">Montant Système</h3>
-                <p className="text-2xl font-bold text-secondary">
-                  {formatCurrency(totals.totalSysteme)}
-                </p>
               </CardBody>
             </Card>
           </div>
-        )}
-      </motion.div>
-    </div>
+          
+          {selectedUser && (
+            <div className="mb-4">
+              <Card className="shadow-md">
+                <CardHeader className="flex flex-col gap-1 p-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="text-lg font-semibold">{selectedUser.name || 'Select a user'}</h3>
+                      <p className="text-xs text-default-500">
+                        Total Sales: <span className="font-semibold text-success">${calculateTotalSales().toLocaleString()}</span>
+                      </p>
+                    </div>
+                    { selectedUser.type==="VENDOR" && (
+                    <Button
+                      size="sm"
+                      color="primary"
+                      variant="flat"
+                      startContent={<FaCalculator />}
+                      onClick={calculateCommission}
+                    >
+                      Commission
+                    </Button>
+              )}
+                  </div>
+                </CardHeader>
+                <Divider />
+                <CardBody className="p-3">
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    <Dropdown>
+                      <DropdownTrigger>
+                        <Button 
+                          variant="flat" 
+                          startContent={<FaCalendarAlt className="text-primary" />}
+                          size="sm"
+                          className="text-xs bg-default-50"
+                        >
+                          {selectedMonth !== null ? months[selectedMonth] : 'Month'}
+                        </Button>
+                      </DropdownTrigger>
+                      <DropdownMenu 
+                        aria-label="Month selection"
+                        onAction={(key) => {
+                          if (key === 'null') {
+                            setSelectedMonth(null);
+                          } else {
+                            setSelectedMonth(Number(key));
+                          }
+                        }}
+                        variant="solid"
+                        className="bg-background"
+                        items={[
+                          { key: 'null', label: 'All Months' },
+                          ...months.map((month, index) => ({
+                            key: index.toString(),
+                            label: month
+                          }))
+                        ]}
+                      >
+                        {(item: {key: string, label: string}) => (
+                          <DropdownItem key={item.key} className="text-foreground">
+                            {item.label}
+                          </DropdownItem>
+                        )}
+                      </DropdownMenu>
+                    </Dropdown>
+                    
+                    <Dropdown>
+                      <DropdownTrigger>
+                        <Button 
+                          variant="flat" 
+                          startContent={<FaCalendarAlt className="text-primary" />}
+                          size="sm"
+                          className="text-xs bg-default-50"
+                        >
+                          {selectedYear !== null ? selectedYear.toString() : 'Year'}
+                        </Button>
+                      </DropdownTrigger>
+                      <DropdownMenu 
+                        aria-label="Year selection"
+                        onAction={(key) => {
+                          if (key === 'null') {
+                            setSelectedYear(null);
+                          } else {
+                            setSelectedYear(Number(key));
+                          }
+                        }}
+                        variant="solid"
+                        className="bg-background"
+                        items={[
+                          { key: 'null', label: 'All Years' },
+                          ...years.map((year) => ({
+                            key: year.toString(),
+                            label: year.toString()
+                          }))
+                        ]}
+                      >
+                        {(item: {key: string, label: string}) => (
+                          <DropdownItem key={item.key} className="text-foreground">
+                            {item.label}
+                          </DropdownItem>
+                        )}
+                      </DropdownMenu>
+                    </Dropdown>
+                  </div>
+                </CardBody>
+              </Card>
+            </div>
+          )}
+          
+          {selectedUser && (
+            <div>
+              {paginatedSolds.length > 0 ? (
+                <div className="space-y-3">
+                  {paginatedSolds.map((sold) => (
+                    <motion.div
+                      key={sold._id.$oid}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Card className="shadow-sm hover:shadow-md transition-shadow">
+                        <CardBody className="p-3">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex-1">
+                              <p className="font-semibold text-sm">{sold.profile}</p>
+                              <div className="flex items-center gap-1 text-xs text-default-500">
+                                <FaClock />
+                                <span>{sold.duration_hour} hours</span>
+                              </div>
+                            </div>
+                            <Chip 
+                              color={sold.status === 'COMPLETED' ? 'success' : 
+                                    sold.status === 'PENDING' ? 'warning' : 'danger'}
+                              variant="flat"
+                              size="sm"
+                              className="capitalize"
+                            >
+                              {sold.status.toLowerCase()}
+                            </Chip>
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <div className="text-default-500">
+                              {formatDate(sold.date)}
+                            </div>
+                            <div className="font-semibold text-success">${sold.price}</div>
+                          </div>
+                        </CardBody>
+                      </Card>
+                    </motion.div>
+                  ))}
+                  
+                  {totalPages > 1 && (
+                    <div className="flex justify-center mt-4">
+                      <Pagination
+                        total={totalPages}
+                        page={currentPage}
+                        onChange={setCurrentPage}
+                        color="primary"
+                        showControls
+                        size="sm"
+                        classNames={{
+                          wrapper: "gap-0 overflow-visible",
+                          item: "w-7 h-7",
+                          cursor: "bg-primary text-white font-bold"
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Card className="shadow-md">
+                  <CardBody className="py-8">
+                    <div className="flex flex-col items-center justify-center">
+                      <div className="bg-default-100 p-4 rounded-full mb-3">
+                        <FaFilter className="text-2xl text-default-300" />
+                      </div>
+                      <p className="text-default-500 text-sm">No sales found</p>
+                      <p className="text-default-400 text-xs mt-1">Try changing the filters</p>
+                    </div>
+                  </CardBody>
+                </Card>
+              )}
+            </div>
+          )}
+          
+          {!selectedUser && (
+            <Card className="shadow-md">
+              <CardBody className="py-8">
+                <div className="flex flex-col items-center justify-center">
+                  <div className="bg-default-100 p-4 rounded-full mb-3">
+                    <FaUser className="text-2xl text-default-300" />
+                  </div>
+                  <p className="text-default-500 text-sm">Select a user to view sales history</p>
+                  <p className="text-default-400 text-xs mt-1">Choose a user from the list above</p>
+                </div>
+              </CardBody>
+            </Card>
+          )}
+        </div>
+        
+        {/* Desktop View */}
+        <div className="hidden md:grid md:grid-cols-3 gap-6">
+          {/* Users List */}
+          <Card className="md:col-span-1 shadow-md hover:shadow-lg transition-shadow">
+            <CardHeader className="flex flex-col sm:flex-row justify-between items-center bg-default-100 p-4">
+              <h2 className="text-xl font-semibold mb-2 sm:mb-0">Users</h2>
+              <div className="w-full sm:max-w-xs">
+                <Input
+                  startContent={<FaSearch className="text-default-400" />}
+                  placeholder="Search users..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full"
+                  size="sm"
+                  variant="bordered"
+                />
+              </div>
+            </CardHeader>
+            <Divider />
+            <CardBody className="overflow-y-auto max-h-[600px] p-2">
+              {filteredUsers.length === 0 ? (
+                <p className="text-center py-4 text-default-400">No users found</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {filteredUsers.map((user) => (
+                    <Button 
+                      key={user._id}
+                      variant={selectedUser?._id === user._id ? "bordered" : "flat"}
+                      color={selectedUser?._id === user._id ? "danger" : "default"}
+                      className={`justify-start text-left py-3 rounded-lg hover:scale-[1.02] transition-transform ${selectedUser?._id === user._id ? 'border-danger border-2' : ''}`}
+                      onClick={() => handleUserSelect(user)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="bg-primary/10 p-2 rounded-full">
+                          <FaUser className="text-sm text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{user.complete_name || 'Unknown User'}</p>
+                        </div>
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </CardBody>
+          </Card>
+          
+          {/* Sales Details */}
+          <Card className="md:col-span-2 shadow-md hover:shadow-lg transition-shadow">
+            <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-default-100 p-4">
+              <div>
+                <h2 className="text-xl font-semibold">
+                  {selectedUser ? selectedUser.name || 'Select a user' : 'Select a user'}
+                </h2>
+                {selectedUser && (
+                  <p className="text-sm text-default-500">
+                    Total Sales: <span className="font-semibold text-success">${calculateTotalSales().toLocaleString()}</span>
+                  </p>
+                )}
+              </div>
+              
+              {selectedUser && (
+                <div className="flex flex-wrap gap-2 mt-2 sm:mt-0 w-full sm:w-auto">
+                  { selectedUser.type==="VENDOR" && (
+                  <Button
+                    color="primary"
+                    variant="solid"
+                    startContent={<FaCalculator />}
+                    onClick={calculateCommission}
+                    size="sm"
+                  >
+                    Calculate Commission
+                  </Button>
+                  )}
+                  <Dropdown>
+                    <DropdownTrigger>
+                      <Button 
+                        variant="flat" 
+                        startContent={<FaCalendarAlt className="text-primary" />}
+                        className="bg-default-50 text-foreground text-sm"
+                        size="sm"
+                      >
+                        {selectedMonth !== null ? months[selectedMonth] : 'Month'}
+                      </Button>
+                    </DropdownTrigger>
+                    <DropdownMenu 
+                      aria-label="Month selection"
+                      onAction={(key) => {
+                        if (key === 'null') {
+                          setSelectedMonth(null);
+                        } else {
+                          setSelectedMonth(Number(key));
+                        }
+                      }}
+                      variant="solid"
+                      className="bg-background"
+                      items={[
+                        { key: 'null', label: 'All Months' },
+                        ...months.map((month, index) => ({
+                          key: index.toString(),
+                          label: month
+                        }))
+                      ]}
+                    >
+                      {(item: {key: string, label: string}) => (
+                        <DropdownItem key={item.key} className="text-foreground">
+                          {item.label}
+                        </DropdownItem>
+                      )}
+                    </DropdownMenu>
+                  </Dropdown>
+                  
+                  <Dropdown>
+                    <DropdownTrigger>
+                      <Button 
+                        variant="flat" 
+                        startContent={<FaCalendarAlt className="text-primary" />}
+                        className="bg-default-50 text-foreground text-sm"
+                        size="sm"
+                      >
+                        {selectedYear !== null ? selectedYear.toString() : 'Year'}
+                      </Button>
+                    </DropdownTrigger>
+                    <DropdownMenu 
+                      aria-label="Year selection"
+                      onAction={(key) => {
+                        if (key === 'null') {
+                          setSelectedYear(null);
+                        } else {
+                          setSelectedYear(Number(key));
+                        }
+                      }}
+                      variant="solid"
+                      className="bg-background"
+                      items={[
+                        { key: 'null', label: 'All Years' },
+                        ...years.map((year) => ({
+                          key: year.toString(),
+                          label: year.toString()
+                        }))
+                      ]}
+                    >
+                      {(item: {key: string, label: string}) => (
+                        <DropdownItem key={item.key} className="text-foreground">
+                          {item.label}
+                        </DropdownItem>
+                      )}
+                    </DropdownMenu>
+                  </Dropdown>
+                </div>
+              )}
+            </CardHeader>
+            <Divider />
+            <CardBody className="p-0 sm:p-2">
+              {selectedUser ? (
+                paginatedSolds.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <Table 
+                      aria-label="Sales history table"
+                      className="min-w-full"
+                      removeWrapper
+                      classNames={{
+                        th: "bg-transparent text-default-500 border-b border-divider text-xs sm:text-sm",
+                        td: "py-2 sm:py-4 text-xs sm:text-sm"
+                      }}
+                    >
+                      <TableHeader>
+                        <TableColumn>PROFILE</TableColumn>
+                        <TableColumn>DURATION</TableColumn>
+                        <TableColumn>PRICE</TableColumn>
+                        <TableColumn>DATE</TableColumn>
+                        <TableColumn>STATUS</TableColumn>
+                      </TableHeader>
+                      <TableBody>
+                        {paginatedSolds.map((sold) => (
+                          <TableRow key={sold._id.$oid} className="hover:bg-default-50 transition-colors">
+                            <TableCell>
+                              <div className="font-medium">{sold.profile}</div>
+                            </TableCell>
+                           
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <FaClock className="text-xs text-default-400" />
+                                <span>{sold.duration_hour} hours</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-semibold text-success">${sold.price}</div>
+                            </TableCell>
+                            <TableCell>{formatDate(sold.date)}</TableCell>
+                            <TableCell>
+                              <Chip 
+                                color={sold.status === 'COMPLETED' ? 'success' : 
+                                      sold.status === 'PENDING' ? 'warning' : 'danger'}
+                                variant="flat"
+                                size="sm"
+                                className="capitalize"
+                              >
+                                {sold.status.toLowerCase()}
+                              </Chip>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-16">
+                    <div className="bg-default-100 p-6 rounded-full mb-4">
+                      <FaFilter className="text-4xl text-default-300" />
+                    </div>
+                    <p className="text-default-500 text-lg">No sales found for the selected filters</p>
+                    <p className="text-default-400 text-sm mt-2">Try changing the month or year filters</p>
+                  </div>
+                )
+              ) : (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <div className="bg-default-100 p-6 rounded-full mb-4">
+                    <FaUser className="text-4xl text-default-300" />
+                  </div>
+                  <p className="text-default-500 text-lg">Select a user to view their sales history</p>
+                  <p className="text-default-400 text-sm mt-2">Choose a user from the list on the left</p>
+                </div>
+              )}
+              {totalPages > 1 && (
+                <div className="flex justify-center mt-6">
+                  <Pagination
+                    total={totalPages}
+                    page={currentPage}
+                    onChange={setCurrentPage}
+                    color="primary"
+                    showControls
+                    classNames={{
+                      wrapper: "gap-0 overflow-visible shadow-sm rounded-lg",
+                      item: "w-8 h-8",
+                      cursor: "bg-primary text-white font-bold"
+                    }}
+                  />
+                </div>
+              )}
+            </CardBody>
+          </Card>
+        </div>
+        
+        {/* Commission Card Modal */}
+        <AnimatePresence>
+          {showCommissionCard && commissionData && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                  setShowCommissionCard(false);
+                }
+              }}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white rounded-xl shadow-2xl max-w-md w-full"
+              >
+                <div id="commission-card" className="p-6 bg-gradient-to-br from-primary/10 to-success/10 rounded-xl">
+                  <div className="text-center mb-6">
+                    <h3 className="text-2xl font-bold text-gray-800 mb-2">Commission Report</h3>
+                    <div className="inline-flex items-center gap-2 bg-white/50 px-3 py-1 rounded-full">
+                      <FaCalendarAlt className="text-primary" />
+                      <span className="text-sm font-medium">{commissionData.month} {commissionData.year}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="bg-primary/10 p-2 rounded-full">
+                        <FaUser className="text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Vendor</p>
+                        <p className="font-semibold text-gray-800">{commissionData.vendorName}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="bg-white rounded-lg p-4 shadow-sm">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-gray-600">Total Sales</span>
+                        <span className="text-xl font-bold text-gray-800">${commissionData.totalSales.toLocaleString()}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-gradient-to-r from-primary to-success h-2 rounded-full" style={{ width: '100%' }}></div>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-success/10 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-3 h-3 bg-success rounded-full"></div>
+                          <span className="text-sm font-medium text-gray-600">Vendor ({commissionData.vendorPercentage}%)</span>
+                        </div>
+                        <p className="text-lg font-bold text-success">${commissionData.vendorCommission.toLocaleString()}</p>
+                      </div>
+                      
+                      <div className="bg-primary/10 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-3 h-3 bg-primary rounded-full"></div>
+                          <span className="text-sm font-medium text-gray-600">System ({commissionData.systemPercentage}%)</span>
+                        </div>
+                        <p className="text-lg font-bold text-primary">${commissionData.systemAmount.toLocaleString()}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <p className="text-xs text-center text-gray-500">Generated on {new Date().toLocaleDateString()}</p>
+                  </div>
+                </div>
+                
+                <div className="p-4 bg-white rounded-b-xl flex gap-2">
+                  <Button
+                    color="primary"
+                    variant="solid"
+                    startContent={<FaShare />}
+                    onClick={shareCommissionCard}
+                    className="flex-1"
+                  >
+                    Share on WhatsApp
+                  </Button>
+                  <Button
+                    color="default"
+                    variant="flat"
+                    onClick={() => setShowCommissionCard(false)}
+                  >
+                    Close
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </AppLayout>
   );
 }
