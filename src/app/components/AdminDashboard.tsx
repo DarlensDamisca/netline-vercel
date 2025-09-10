@@ -154,7 +154,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ globals, plans, 
           icon: <FaTicket size={24} />,
           trend: { value: "", isPositive: false },
           delay: 0.4
-        }
+        },
+        {
+    title: "Active Plans",
+    value: globals.active_plans,
+    icon: <IoTrendingUp size={24} />,
+    trend: { value: "Live", isPositive: true },
+    delay: 0.5
+  }
       ]);
     }
     if (plans) setSelledPlans(plans);
