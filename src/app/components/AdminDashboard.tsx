@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, ReactNode } from 'react';
-import { Card, CardBody, Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Input, Pagination } from "@nextui-org/react";
+import { Card, CardBody, Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Input, Pagination, } from "@nextui-org/react";
 import { FaUsers, FaSearch, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { MdAttachMoney } from "react-icons/md";
 import { IoTrendingUp } from "react-icons/io5";
 import { motion } from "framer-motion";
 import { PlanSalesAnalytics } from './PlanSalesAnalytics';
 import { FaTicket } from 'react-icons/fa6';
+import { form } from 'framer-motion/client';
 
 interface StatCardProps {
   title: string;
@@ -56,10 +57,10 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon, trend, delay })
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5, delay }}
-    whileHover={{ scale: 1.03 }}
+    whileHover={{ scale: 1.02 }}
     className="w-full"
   >
-    <Card className="border border-default-200 shadow-sm hover:shadow-md transition-shadow">
+    <Card className="border-1 border-default-200">
       <CardBody className="p-6">
         <div className="flex items-center gap-4">
           <div className="p-3 rounded-xl bg-primary-100">
@@ -86,7 +87,7 @@ const PlanCard: React.FC<{ plan: PlanData }> = ({ plan }) => (
     animate={{ opacity: 1, x: 0 }}
     className="w-full"
   >
-    <Card className="border border-default-200 shadow-sm hover:shadow-md transition-shadow w-full">
+    <Card className="border-1 border-default-200 w-full">
       <CardBody className="p-4">
         <div className="flex justify-between items-center">
           <div>
@@ -115,6 +116,7 @@ function formatNumberWithCommas(number: number) {
   return number.toString();
 }
 
+
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ globals, plans, users_data, users_all, histories }) => {
   const { isOpen: isPlansOpen, onOpen: onPlansOpen, onClose: onPlansClose } = useDisclosure();
   const { isOpen: isUsersOpen, onOpen: onUsersOpen, onClose: onUsersClose } = useDisclosure();
@@ -123,13 +125,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ globals, plans, 
   const [filteredUsers, setFilteredUsers] = useState<EnhancedUserData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [expandedUsers, setExpandedUsers] = useState(new Set<number>());
+
   const [stats, setStats] = useState<{
     title: string;
     value: string;
     icon: React.JSX.Element;
     trend: { value: string; isPositive: boolean };
     delay: number;
-  }[]>([]);
+  }[]>([])
 
   useEffect(() => {
     if (globals) {
@@ -154,38 +157,165 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ globals, plans, 
           icon: <FaTicket size={24} />,
           trend: { value: "", isPositive: false },
           delay: 0.4
-        },
-        {
-    title: "Active Plans",
-    value: globals.active_plans,
-    icon: <IoTrendingUp size={24} />,
-    trend: { value: "Live", isPositive: true },
-    delay: 0.5
-  }
-      ]);
+        }
+      ])
     }
-    if (plans) setSelledPlans(plans);
-    if (users_data) setUsers(users_data);
-  }, [globals, plans, users_data]);
+
+    if (plans) {
+      setSelledPlans(plans)
+    }
+    if (users_data) {
+      //console.log("users_data")
+      //console.log(users_data)
+      setUsers(users_data)
+    }
+  }, [globals, plans, users_data])
 
   const itemsPerPage = 20;
+
   const [selledPlans, setSelledPlans] = useState<PlanData[]>([]);
   const [users, setUsers] = useState<EnhancedUserData[]>([]);
 
+  /*  const [users] = useState<EnhancedUserData[]>([
+     { 
+       id: 1, 
+       name: "John Smith", 
+       registrationDate: "2024-01-15", 
+       plansSold: [
+         { name: "Plan 1", value: 100, date: "2024-01-15" },
+         { name: "Plan 2", value: 200, date: "2024-01-16" },
+       ],
+       totalSold: 300,
+       dataUsage: { total: 1000 },
+     },
+     { 
+       id: 2, 
+       name: "Maria Garcia", 
+       registrationDate: "2024-01-16", 
+       plansSold: [
+         { name: "Plan 3", value: 300, date: "2024-01-17" },
+         { name: "Plan 4", value: 400, date: "2024-01-18" },
+       ],
+       totalSold: 700,
+       dataUsage: { total: 2000 },
+     },
+     { 
+       id: 3, 
+       name: "David Johnson", 
+       registrationDate: "2024-01-17", 
+       plansSold: [
+         { name: "Plan 5", value: 500, date: "2024-01-19" },
+         { name: "Plan 6", value: 600, date: "2024-01-20" },
+       ],
+       totalSold: 1100,
+       dataUsage: { total: 3000 },
+     },
+     { 
+       id: 4, 
+       name: "Sarah Wilson", 
+       registrationDate: "2024-01-18", 
+       plansSold: [
+         { name: "Plan 7", value: 700, date: "2024-01-21" },
+         { name: "Plan 8", value: 800, date: "2024-01-22" },
+       ],
+       totalSold: 1500,
+       dataUsage: { total: 4000 },
+     },
+     { 
+       id: 5, 
+       name: "Michael Brown", 
+       registrationDate: "2024-01-19", 
+       plansSold: [
+         { name: "Plan 9", value: 900, date: "2024-01-23" },
+         { name: "Plan 10", value: 1000, date: "2024-01-24" },
+       ],
+       totalSold: 1900,
+       dataUsage: { total: 5000 },
+     },
+     { 
+       id: 6, 
+       name: "Emma Davis", 
+       registrationDate: "2024-01-20", 
+       plansSold: [
+         { name: "Plan 11", value: 1100, date: "2024-01-25" },
+         { name: "Plan 12", value: 1200, date: "2024-01-26" },
+       ],
+       totalSold: 2300,
+       dataUsage: { total: 6000 },
+     },
+     { 
+       id: 7, 
+       name: "James Miller", 
+       registrationDate: "2024-01-21", 
+       plansSold: [
+         { name: "Plan 13", value: 1300, date: "2024-01-27" },
+         { name: "Plan 14", value: 1400, date: "2024-01-28" },
+       ],
+       totalSold: 2700,
+       dataUsage: { total: 7000 },
+     },
+     { 
+       id: 8, 
+       name: "Lisa Anderson", 
+       registrationDate: "2024-01-22", 
+       plansSold: [
+         { name: "Plan 15", value: 1500, date: "2024-01-29" },
+         { name: "Plan 16", value: 1600, date: "2024-01-30" },
+       ],
+       totalSold: 3100,
+       dataUsage: { total: 8000 },
+     },
+     { 
+       id: 9, 
+       name: "Robert Taylor", 
+       registrationDate: "2024-01-23", 
+       plansSold: [
+         { name: "Plan 17", value: 1700, date: "2024-01-31" },
+         { name: "Plan 18", value: 1800, date: "2024-02-01" },
+       ],
+       totalSold: 3500,
+       dataUsage: { total: 9000 },
+     },
+     { 
+       id: 10, 
+       name: "Patricia Martinez", 
+       registrationDate: "2024-01-24", 
+       plansSold: [
+         { name: "Plan 19", value: 1900, date: "2024-02-02" },
+         { name: "Plan 20", value: 2000, date: "2024-02-03" },
+       ],
+       totalSold: 3900,
+       dataUsage: { total: 10000 },
+     },
+   ]); */
+
+
+
+  // Reset to first page when search query changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery]);
 
+  // Filter users when search query changes
   useEffect(() => {
     if (users.length > 0) {
+
       const filterUsers = () => {
         setIsLoading(true);
         try {
           const query = searchQuery.toLowerCase().trim();
           const filtered = users.filter(user => {
             const name = user.name?.toLowerCase();
-            const id = user.id ? user.id.toString() : "";
-            return name.includes(query) || id.includes(query);
+
+            const id = user.id?user.id.toString():"";
+            const date = new Date(user.registrationDate).toLocaleDateString();
+            //console.log(user)
+            /* if(!user.id){
+              console.log(user)
+            } */
+            return name.includes(query) ||
+              id.includes(query) //||
+              //date.includes(query);
           });
           setFilteredUsers(filtered);
         } catch (error) {
@@ -195,11 +325,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ globals, plans, 
           setIsLoading(false);
         }
       };
+
+      // Debounce the filter operation
       const timeoutId = setTimeout(filterUsers, 300);
       return () => clearTimeout(timeoutId);
     }
+
   }, [searchQuery, users]);
 
+  // Memoize pagination calculations
   const { currentUsers, totalPages } = useMemo(() => {
     const total = Math.ceil(filteredUsers.length / itemsPerPage);
     const current = filteredUsers.slice(
@@ -209,7 +343,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ globals, plans, 
     return { currentUsers: current, totalPages: total };
   }, [filteredUsers, currentPage, itemsPerPage]);
 
-  const handleSearchChange = (value: string) => setSearchQuery(value);
+  // Handle search input change
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+  };
 
   return (
     <div className="max-w-7xl mx-auto p-6">
@@ -221,52 +358,72 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ globals, plans, 
         Dashboard Overview
       </motion.h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {stats.map((stat, index) => (
           <StatCard key={index} {...stat} />
         ))}
       </div>
 
-      <div className="flex justify-end gap-3 mb-12">
-        <Button onPress={onPlansOpen} color="primary" className="px-6" radius="md">
-          View Plans
+      <div className="flex justify-center gap-4 mb-8">
+        <Button
+          onPress={onPlansOpen}
+          color="primary"
+          className="px-8"
+          radius="sm"
+        >
+          View selled plans
         </Button>
-        <Button onPress={onUsersOpen} color="secondary" variant="flat" className="px-6" radius="md">
-          Load Users
+        <Button
+          onPress={onUsersOpen}
+          color="primary"
+          variant="bordered"
+          className="px-8"
+          radius="sm"
+        >
+          Load users
         </Button>
       </div>
 
-      <div className="mt-12">
-        <Card className="p-6 shadow-md">
-          <motion.h2
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-xl font-semibold mb-6 text-foreground"
-          >
-            Plan Sales Analytics
-          </motion.h2>
-          <PlanSalesAnalytics users={users_all} histories={histories} />
-        </Card>
+      <div className="mt-8">
+        <motion.h2
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-xl font-semibold mb-6 text-foreground mt-32"
+        >
+          Plan Sales Analytics
+        </motion.h2>
+        <PlanSalesAnalytics users={users_all} histories={histories} />
       </div>
 
-      {/* Plans Modal */}
-      <Modal isOpen={isPlansOpen} onClose={onPlansClose} size="3xl" scrollBehavior="inside">
+      <Modal
+        isOpen={isPlansOpen}
+        onClose={onPlansClose}
+        size="3xl"
+        scrollBehavior="inside"
+      >
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="flex flex-col gap-2 border-b border-default-200 pb-4">
+              <ModalHeader className="flex flex-col gap-1">
                 <h2 className="text-xl font-bold text-foreground">Plans Overview</h2>
                 <p className="text-sm text-default-500">Total sold plans</p>
               </ModalHeader>
               <ModalBody>
                 <div className="grid gap-4">
                   {selledPlans.map((plan, index) => (
-                    <PlanCard key={index} plan={plan} />
+                    <PlanCard
+                      key={index}
+                      plan={plan}
+                    />
                   ))}
                 </div>
               </ModalBody>
-              <ModalFooter className="flex justify-center">
-                <Button color="primary" variant="light" onPress={onClose}>
+              <ModalFooter>
+                <Button
+                  color="primary"
+                  variant="light"
+                  onPress={onClose}
+                >
                   Close
                 </Button>
               </ModalFooter>
@@ -275,21 +432,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ globals, plans, 
         </ModalContent>
       </Modal>
 
-      {/* Users Modal */}
-      <Modal isOpen={isUsersOpen} onClose={onUsersClose} size="3xl" scrollBehavior="inside">
+      <Modal
+        isOpen={isUsersOpen}
+        onClose={onUsersClose}
+        size="3xl"
+        scrollBehavior="inside"
+      >
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="flex flex-col gap-2 border-b border-default-200 pb-4">
-                <h2 className="text-xl font-bold text-foreground">Users Overview</h2>
-                <p className="text-sm text-default-500">Registered users in the system</p>
+              <ModalHeader className="flex flex-col gap-3">
+                <div>
+                  <h2 className="text-xl font-bold text-foreground">Users Overview</h2>
+                  <p className="text-sm text-default-500">Registered users in the system</p>
+                </div>
                 <Input
                   isClearable
-                  className="w-full mt-2"
+                  className="w-full"
                   placeholder="Search by name, ID, or date..."
                   startContent={<FaSearch className="text-default-400" />}
                   value={searchQuery}
                   onValueChange={handleSearchChange}
+                  description="Search by name, ID, or registration date"
                 />
               </ModalHeader>
               <ModalBody>
@@ -300,7 +464,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ globals, plans, 
                     </div>
                   ) : currentUsers.length > 0 ? (
                     currentUsers.map((user) => (
-                      <Card key={user.id} className="p-4 shadow-sm border border-default-200 hover:shadow-md transition-shadow">
+                      <div
+                        key={user.id}
+                        className="p-4 rounded-lg border border-default-200 hover:bg-default-100 transition-colors"
+                      >
                         <div className="flex justify-between items-start">
                           <div>
                             <h3 className="font-semibold text-foreground">{user.name}</h3>
@@ -313,8 +480,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ globals, plans, 
                             variant="light"
                             onPress={() => {
                               const newExpandedUsers = new Set(expandedUsers);
-                              if (newExpandedUsers.has(user.id)) newExpandedUsers.delete(user.id);
-                              else newExpandedUsers.add(user.id);
+                              if (newExpandedUsers.has(user.id)) {
+                                newExpandedUsers.delete(user.id);
+                              } else {
+                                newExpandedUsers.add(user.id);
+                              }
                               setExpandedUsers(newExpandedUsers);
                             }}
                           >
@@ -323,50 +493,55 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ globals, plans, 
                         </div>
 
                         {expandedUsers.has(user.id) && (
-                          <div className="mt-4 space-y-6">
-                            <div className="bg-content1 dark:bg-content2 rounded-xl p-4">
-                              <h4 className="font-semibold mb-3 text-warning-500 flex items-center gap-2">
-                                <FaTicket className="text-lg" />
-                                Plans Sold
-                              </h4>
-                              <div className="space-y-2">
-                                {user.plansSold.map((plan, index) => (
-                                  <div key={index} className="flex justify-between items-center p-3 bg-background dark:bg-default-100 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                                    <div className="flex items-center gap-3">
-                                      <div className="w-2 h-2 rounded-full bg-warning-500"></div>
-                                      <span className="font-medium text-foreground">{plan.name} ({plan.count})</span>
+                          <div className="mt-4">
+                            <div className="space-y-6">
+                              <div className="bg-content1 dark:bg-content2 rounded-xl p-4">
+                                <h4 className="font-semibold mb-3 text-warning-500 flex items-center gap-2">
+                                  <FaTicket className="text-lg" />
+                                  Plans Sold
+                                </h4>
+                                <div className="space-y-2">
+                                  {user.plansSold.map((plan, index) => (
+                                    <div key={index} className="flex justify-between items-center p-3 bg-background dark:bg-default-100 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-2 h-2 rounded-full bg-warning-500"></div>
+                                        <span className="font-medium text-foreground">{plan.name} ({plan.count})</span>
+
+                                      </div>
+                                      <span className="font-semibold text-success-600">HTG {formatNumberWithCommas(plan.value ? plan.value : 0)}</span>
                                     </div>
-                                    <span className="font-semibold text-success-600">HTG {formatNumberWithCommas(plan.value ? plan.value : 0)}</span>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-content1 dark:bg-content2 rounded-xl p-4">
+                                  <h4 className="font-semibold mb-3 text-warning-500 flex items-center gap-2">
+                                    <MdAttachMoney className="text-lg" />
+                                    Total Sales
+                                  </h4>
+                                  <p className="text-2xl font-bold text-success-600">
+                                    HTG {formatNumberWithCommas(user.totalSold)}
+                                  </p>
+                                </div>
+
+                                <div className="bg-content1 dark:bg-content2 rounded-xl p-4">
+                                  <h4 className="font-semibold mb-3 text-warning-500 flex items-center gap-2">
+                                    <IoTrendingUp className="text-lg" />
+                                    Data Usage
+                                  </h4>
+                                  <div className="space-y-2">
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-default-500">Total</span>
+                                      <span className="font-semibold text-foreground">{formatNumberWithCommas(user.dataUsage.total)} MB</span>
+                                    </div>
                                   </div>
-                                ))}
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="bg-content1 dark:bg-content2 rounded-xl p-4">
-                                <h4 className="font-semibold mb-3 text-warning-500 flex items-center gap-2">
-                                  <MdAttachMoney className="text-lg" />
-                                  Total Sales
-                                </h4>
-                                <p className="text-2xl font-bold text-success-600">
-                                  HTG {formatNumberWithCommas(user.totalSold)}
-                                </p>
-                              </div>
-
-                              <div className="bg-content1 dark:bg-content2 rounded-xl p-4">
-                                <h4 className="font-semibold mb-3 text-warning-500 flex items-center gap-2">
-                                  <IoTrendingUp className="text-lg" />
-                                  Data Usage
-                                </h4>
-                                <div className="flex justify-between items-center">
-                                  <span className="text-default-500">Total</span>
-                                  <span className="font-semibold text-foreground">{formatNumberWithCommas(user.dataUsage.total)} MB</span>
                                 </div>
                               </div>
                             </div>
                           </div>
                         )}
-                      </Card>
+                      </div>
                     ))
                   ) : (
                     <div className="text-center py-8 text-default-500">
@@ -388,8 +563,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ globals, plans, 
                     />
                   </div>
                 )}
-                <div className="flex justify-center w-full">
-                  <Button color="primary" variant="light" onPress={onClose}>
+                <div className="flex justify-end w-full">
+                  <Button
+                    color="primary"
+                    variant="light"
+                    onPress={onClose}
+                  >
                     Close
                   </Button>
                 </div>
